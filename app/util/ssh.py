@@ -6,7 +6,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 
 @contextmanager
-def ssh_client_context(host, username, port=22, timeout=10):
+def ssh_client_context(host, username, port, timeout=10):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -16,8 +16,8 @@ def ssh_client_context(host, username, port=22, timeout=10):
     finally:
         ssh.close()
 
-def execute_ssh_command(host, username, command):
-    with ssh_client_context(host, username) as ssh:
+def execute_ssh_command(host, username, port, command):
+    with ssh_client_context(host, username, port) as ssh:
         stdin, stdout, stderr = ssh.exec_command(command)
         
         # Wait for the command to complete

@@ -1,38 +1,74 @@
-from util import ssh, virt, virsh
+from fastapi import FastAPI, Security, HTTPException, Depends, status
+from fastapi.security import APIKeyHeader
+from typing import Optional
+from pydantic import BaseModel, Field
+from contextlib import asynccontextmanager
+import os
 
-def download_codespace_image(host, username, tag, vm_name):
-    command = f'TAG={tag} VM_NAME={vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.23.1/tools/developer-setup/download-qcow2-image.sh)'
-    ssh.execute_ssh_command(host, username, command)
+#ENV variables
+SSH_USER = os.getenv('SSH_USER')
+SSH_HOST = os.getenv('SSH_HOST')
+SSH_PORT = os.getenv('SSH_PORT')
+API_TOKEN = os.getenv('API_TOKEN')
 
-if __name__ == '__main__':
-    connect_uri = "qemu+ssh://<user>@<host>:<port>/system"
-    vm_name = "test"
-    owner = 'nicholas'
+CONNECT_URI = f'qemu+ssh://{SSH_USER}@{SSH_HOST}:{SSH_PORT}/system'
 
-    # download_codespace_image(host, user, 'v0.72.0-rc4', vm_name)
+api_key_header = APIKeyHeader(name="Authorization")
 
-    virt.create_virtual_machine(
-        connect=connect_uri,
-        name=f"{vm_name}",
-        metadata_description=f"Owner: {owner}",
-        ram=10240,
-        vcpus=2,
-        disk_path=f"/var/lib/libvirt/images/{vm_name}.qcow2",
-        disk_format="qcow2",
-        os_variant="linux2022",
-        network_bridge="virbr0",
-        network_model="virtio",
-        import_option=True
-    )
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup function to test env variables
+    crashes if env variables are not set
 
-    # # Destroy the VM
-    # virsh.destroy_vm(connect_uri, vm_name)
+    Args:
+        app (FastAPI)
+
+    Raises:
+        Exception: env variables not set
+    """
     
-    # # Undefine the VM
-    # virsh.undefine_vm(connect_uri, vm_name, remove_all_storage=True)
-    
-    # # Start the VM
-    # virsh.start_vm(connect_uri, vm_name)
+    required_env_vars = ["SSH_USER", "SSH_HOST", "SSH_PORT", "API_TOKEN"]
 
-    #List all vms
-    virsh.list_vms(connect_uri)
+    for var in required_env_vars:
+        if var not in os.environ:
+            raise Exception(f"Environment variable {var} is not set.")
+    yield
+
+#define the FastAPI app with lifespan
+#for startup function
+
+app = FastAPI()
+# app = FastAPI(lifespan=lifespan)
+
+class Vm(BaseModel):
+    vm_name: str = Field(...,example = 'dinosaur-cat')
+    tags: dict = Field(...,example = {"owner": {"name": "john-doe"}})
+    user_data: str = Field(...,example = 'cloud-init user data string')
+    image: str = Field(...,example = 'v0.72.0')
+
+def get_api_key(api_key: Optional[str] = Security(api_key_header)):
+    if api_key == API_TOKEN:
+        return api_key
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+@app.get("/protected")
+def another_protected(api_key: str = Depends(get_api_key)):
+    return {"info": "This is a protected route"}
+
+@app.post("/v1/create")
+async def create_vm(vm: Vm):
+    return vm
+
+@app.get("/health")
+async def health():
+    """health check
+
+    Returns:
+        dict: health status
+    """
+    return {"status": "healthy"}
