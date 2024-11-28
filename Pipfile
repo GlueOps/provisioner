@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+paramiko = "*"
+glueops-helpers = {file = "https://github.com/GlueOps/python-glueops-helpers-library/archive/refs/tags/v0.6.0.zip"}
 
 [dev-packages]
 

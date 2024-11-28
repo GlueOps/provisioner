@@ -1,30 +1,38 @@
-#!/bin/bash
-sudo cp /var/lib/libvirt/templates/{{IMAGE}} /var/lib/libvirt/images/{{SERVER_NAME}}.qcow2
+from util import ssh, virt, virsh
 
-userDataFile=$(mktemp)
-echo -e "{{USER_DATA}}" > "$userDataFile"
-sudo virt-install \
-  --connect qemu+ssh://root@100.88.0.49/system \
-  --name 'test' \
-  --metadata description="Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.Character Counter is a 100% free online character count calculator that's simple to use. Sometimes users prefer simplicity over all of the detailed writing information Word Counter provides, and this is exactly what this tool offers. It displays character count and word count which is often the only information a person needs to know about their writing. Best of all, you receive the needed information at a lightning fast speed.test description/>" \
-  --ram 10240 \
-  --vcpus 2 \
-  --disk path=/var/lib/libvirt/images/test.qcow2,format=qcow2 \
-  --os-variant linux2022 \
-  --network bridge=virbr0,model=virtio \
-  --noautoconsole \
-  --import
+def download_codespace_image(host, username, tag, vm_name):
+    command = f'TAG={tag} VM_NAME={vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.23.1/tools/developer-setup/download-qcow2-image.sh)'
+    ssh.execute_ssh_command(host, username, command)
 
-  #!/bin/bash
-sudo virsh --connect qemu+ssh://root@100.88.0.49/system destroy test
-sleep 10
-#Remove a vm (undefine it)
-sudo virsh --connect qemu+ssh://root@100.88.0.49/system undefine test --remove-all-storage
+if __name__ == '__main__':
+    connect_uri = "qemu+ssh://<user>@<host>:<port>/system"
+    vm_name = "test"
+    owner = 'nicholas'
 
-sudo virsh --connect qemu+ssh://root@100.88.0.49/system nodeinfo
+    # download_codespace_image(host, user, 'v0.72.0-rc4', vm_name)
 
-virsh --connect qemu+ssh://root@100.88.0.49/system list --name | while read vm; do
-    echo "VM: $vm"
-    virsh dominfo $vm
-done
-virsh --connect qemu+ssh://root@100.88.0.49/system nodeinfo
+    virt.create_virtual_machine(
+        connect=connect_uri,
+        name=f"{vm_name}",
+        metadata_description=f"Owner: {owner}",
+        ram=10240,
+        vcpus=2,
+        disk_path=f"/var/lib/libvirt/images/{vm_name}.qcow2",
+        disk_format="qcow2",
+        os_variant="linux2022",
+        network_bridge="virbr0",
+        network_model="virtio",
+        import_option=True
+    )
+
+    # # Destroy the VM
+    # virsh.destroy_vm(connect_uri, vm_name)
+    
+    # # Undefine the VM
+    # virsh.undefine_vm(connect_uri, vm_name, remove_all_storage=True)
+    
+    # # Start the VM
+    # virsh.start_vm(connect_uri, vm_name)
+
+    #List all vms
+    virsh.list_vms(connect_uri)

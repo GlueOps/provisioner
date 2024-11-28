@@ -1,6 +1,54 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "libvirt@10.9.0": {
+      "last_modified": "2024-11-16T04:25:12Z",
+      "resolved": "github:NixOS/nixpkgs/34a626458d686f1b58139620a8b2793e9e123bba#libvirt",
+      "source": "devbox-search",
+      "version": "10.9.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/gdg3dlgr759jxx5wldzkpir2hs51payg-libvirt-10.9.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/gdg3dlgr759jxx5wldzkpir2hs51payg-libvirt-10.9.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/lpzizvaxzy5zav6qfjnbnngc2qlwsam0-libvirt-10.9.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/lpzizvaxzy5zav6qfjnbnngc2qlwsam0-libvirt-10.9.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/f35drybm9l7agg957rbihbmdm7rcsi09-libvirt-10.9.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/f35drybm9l7agg957rbihbmdm7rcsi09-libvirt-10.9.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/rxa46knb3il432m52bd3aslzmsjmykkn-libvirt-10.9.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/rxa46knb3il432m52bd3aslzmsjmykkn-libvirt-10.9.0"
+        }
+      }
+    },
     "pipenv@latest": {
       "last_modified": "2024-11-16T04:25:12Z",
       "resolved": "github:NixOS/nixpkgs/34a626458d686f1b58139620a8b2793e9e123bba#pipenv",
@@ -119,6 +167,70 @@
             }
           ],
           "store_path": "/nix/store/a2c5azpwm9qbmfg9vv9x3yrgbxncixc6-python3-3.11.10"
+        }
+      }
+    },
+    "virt-manager@4.1.0": {
+      "last_modified": "2024-11-16T04:25:12Z",
+      "resolved": "github:NixOS/nixpkgs/34a626458d686f1b58139620a8b2793e9e123bba#virt-manager",
+      "source": "devbox-search",
+      "version": "4.1.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bq7s4gb2yjnv4af3vd0sh4cnycgmw7a5-virt-manager-4.1.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/daaglh73xf2maxgy5x3972x9kmdv8syb-virt-manager-4.1.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/bq7s4gb2yjnv4af3vd0sh4cnycgmw7a5-virt-manager-4.1.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bpbkxnd6gzkd4l69pg7rwl5f3rz5j1f9-virt-manager-4.1.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/8jxh79kkm091gkwyrx7dqhdnw2j3k8nj-virt-manager-4.1.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/bpbkxnd6gzkd4l69pg7rwl5f3rz5j1f9-virt-manager-4.1.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/qd1kwasg8q7y2p574s57bwh0mqcm1wng-virt-manager-4.1.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/5mlvdx3q7l65xzhx7qynhzpkvjl0x3c5-virt-manager-4.1.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/qd1kwasg8q7y2p574s57bwh0mqcm1wng-virt-manager-4.1.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/6df7l0303snkyx4306aasgzk8cp1zhsr-virt-manager-4.1.0",
+              "default": true
+            },
+            {
+              "name": "dist",
+              "path": "/nix/store/vgpgr0pl9z4767a4m0xx8vmjx1f48bvr-virt-manager-4.1.0-dist"
+            }
+          ],
+          "store_path": "/nix/store/6df7l0303snkyx4306aasgzk8cp1zhsr-virt-manager-4.1.0"
         }
       }
     }
