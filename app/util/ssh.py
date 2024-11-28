@@ -29,6 +29,7 @@ def execute_ssh_command(host, username, port, command):
         
         if exit_status == 0:
             logger.info(f"Command: {command} executed successfully: {output}")
+            return output
         else:
             logger.error(f"Command: {command} failed with exit status {exit_status} Error: {error}")
             raise Exception('SSH command failed')
