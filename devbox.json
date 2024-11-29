@@ -13,7 +13,13 @@
       ],
       "k8s": [
           "devbox run pipenv run fastapi run"
-      ]
+      ],
+      "dev": [
+        "echo '\\033[1;32m\\nTo install packages run: \\033[1;36mpipenv install\\033[1;32m\\n\\033[0m'",
+        "echo '\\033[1;32m\\nAfter installing packages fix cffi install with: \\033[1;36mdevbox run fix_cffi\\033[1;32m\\n\\033[0m'",
+        "echo '\\033[1;32m\\nTo start the app run: \\033[1;36mfastapi dev\\033[1;32m\\n\\033[0m'",
+        "devbox run pipenv shell"
+    ]
     }
   }
 }
