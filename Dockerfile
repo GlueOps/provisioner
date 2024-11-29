@@ -3,7 +3,10 @@ FROM jetpackio/devbox:0.13.6
 # Installing your devbox project
 WORKDIR /code
 USER root:root
+
 RUN mkdir -p /code && chown ${DEVBOX_USER}:${DEVBOX_USER} /code
+RUN mkdir -p /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
+RUN chown ${DEVBOX_USER}:${DEVBOX_USER} /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
 USER ${DEVBOX_USER}:${DEVBOX_USER}
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} devbox.json devbox.json
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} devbox.lock devbox.lock
@@ -11,6 +14,8 @@ COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} Pipfile Pipfile
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} Pipfile.lock Pipfile.lock
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} app/ /code/app
 
+COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscaled /app/tailscaled
+COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscale /app/tailscale
 
 
 
