@@ -12,7 +12,7 @@
         "pipenv run pip -vvv install --upgrade --force-reinstall cffi"
       ],
       "k8s": [
-          "printf '%s\n' $SSH_PRIVATE_KEY_ED25519_BASE64_ENCODED > /code/id_ed25519",
+          "printf '%s\n' $SSH_PRIVATE_KEY_ED25519_BASE64_ENCODED | base64 --decode > /code/id_ed25519",
           "eval $(ssh-agent -s)",
           "chmod 600 /code/id_ed25519",
           "ssh-add /code/id_ed25519",
