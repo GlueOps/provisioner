@@ -12,6 +12,9 @@
         "pipenv run pip -vvv install --upgrade --force-reinstall cffi"
       ],
       "k8s": [
+          "echo $SSH_PRIVATE_KEY_ED25519 > /root/.ssh/id_ed25519",
+          "eval '$(ssh-agent -s)",
+          "ssh-add ~/.ssh/id_ed25519",
           "/app/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &",
           "/app/tailscale up --auth-key=${TAILSCALE_AUTHKEY} --hostname=provisioner",
           "export ALL_PROXY=socks5://localhost:1055/",
