@@ -17,6 +17,7 @@ COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} app/ /code/app
 
 RUN devbox run -- echo "Installed Packages."
 RUN devbox run pipenv install
-RUN devbox run fix_cffi
+# https://stackoverflow.com/questions/34370962/no-module-named-cffi-backend
+RUN devbox run fix_cffi 
 
 CMD [ "devbox", "run", "k8s"]
