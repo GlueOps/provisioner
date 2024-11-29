@@ -49,7 +49,7 @@
         }
       }
     },
-    "pipenv@latest": {
+    "pipenv@2024.2.0": {
       "last_modified": "2024-11-16T04:25:12Z",
       "resolved": "github:NixOS/nixpkgs/34a626458d686f1b58139620a8b2793e9e123bba#pipenv",
       "source": "devbox-search",
