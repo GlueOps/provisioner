@@ -12,8 +12,12 @@
         "pipenv run pip -vvv install --upgrade --force-reinstall cffi"
       ],
       "k8s": [
+          "printf '%s\n' $SSH_PRIVATE_KEY_ED25519_BASE64_ENCODED | base64 --decode > /code/id_ed25519",
+          "eval $(ssh-agent -s)",
+          "chmod 600 /code/id_ed25519",
+          "ssh-add /code/id_ed25519",
           "/app/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &",
-          "/app/tailscale up --auth-key=${TAILSCALE_AUTHKEY} --hostname=provisioner",
+          "/app/tailscale up --auth-key=${TAILSCALE_AUTHKEY} --hostname=${HOSTNAME}",
           "export ALL_PROXY=socks5://localhost:1055/",
           "devbox run pipenv run fastapi run"
       ],
