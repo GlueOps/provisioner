@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+paramiko = "*"
+glueops-helpers = {file = "https://github.com/GlueOps/python-glueops-helpers-library/archive/refs/tags/v0.6.0.zip"}
+fastapi = {extras = ["standard"], version = "*"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

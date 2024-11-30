@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.6/.schema/devbox.schema.json",
+  "packages": [
+    "python-full@3.11.10",
+    "pipenv@2024.2.0",
+    "libvirt@10.9.0",
+    "virt-manager@4.1.0"
+  ],
+  "shell": {
+    "scripts": {
+      "fix_cffi": [
+        "pipenv run pip -vvv install --upgrade --force-reinstall cffi"
+      ],
+      "k8s": [
+          "printf '%s\n' $SSH_PRIVATE_KEY_ED25519_BASE64_ENCODED | base64 --decode > /code/id_ed25519",
+          "eval $(ssh-agent -s)",
+          "chmod 600 /code/id_ed25519",
+          "ssh-add /code/id_ed25519",
+          "/app/tailscaled --tun=userspace-networking --socks5-server=localhost:1055 &",
+          "/app/tailscale up --auth-key=${TAILSCALE_AUTHKEY} --hostname=${HOSTNAME}",
+          "export ALL_PROXY=socks5://localhost:1055/",
+          "devbox run pipenv run fastapi run"
+      ],
+      "dev": [
+        "echo '\\033[1;32m\\nTo install packages run: \\033[1;36mpipenv install\\033[1;32m\\n\\033[0m'",
+        "echo '\\033[1;32m\\nAfter installing packages fix cffi install with: \\033[1;36mdevbox run fix_cffi\\033[1;32m\\n\\033[0m'",
+        "echo '\\033[1;32m\\nTo start the app run: \\033[1;36mfastapi dev\\033[1;32m\\n\\033[0m'",
+        "devbox run pipenv shell"
+    ]
+    }
+  }
+}
