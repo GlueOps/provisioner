@@ -3,8 +3,8 @@ from fastapi.security import APIKeyHeader
 from typing import Optional
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
-from util import ssh, virt, virsh
-import os, glueops.setup_logging, traceback
+from util import ssh, virt, virsh, formatter
+import os, glueops.setup_logging, traceback, base64, yaml, tempfile
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -48,7 +48,7 @@ app = FastAPI()
 class Vm(BaseModel):
     vm_name: str = Field(...,example = 'dinosaur-cat')
     tags: dict = Field(...,example = {"owner": {"name": "john-doe"}})
-    user_data: str = Field(...,example = 'cloud-init user data string')
+    user_data: str = Field(...,example = 'cloud-init user data-data base64 encoded')
     image: str = Field(...,example = 'v0.72.0-rc4')
 
 class VmMeta(BaseModel):
@@ -67,27 +67,54 @@ def get_api_key(api_key: Optional[str] = Security(api_key_header)):
 @app.post("/v1/create")
 async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     logger.info(vm)
+
+    # Decode user data
+    decoded_user_data = formatter.fix_indentation(base64.b64decode(vm.user_data).decode('utf-8').strip())
+
+    # Validate YAML format
+    try:
+        yaml.safe_load(decoded_user_data)
+    except yaml.YAMLError as e:
+        raise ValueError(f"Invalid YAML in user data: {e}")
+
     command = f'TAG={vm.image} VM_NAME={vm.vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.23.1/tools/developer-setup/download-qcow2-image.sh)'
-    # ssh.execute_ssh_command(SSH_HOST, SSH_USER, SSH_PORT, command)
-    file = ssh.execute_ssh_command(SSH_HOST, SSH_USER, SSH_PORT, f'userDataFile=$(mktemp) && echo -e "{vm.user_data}" > "$userDataFile"')
+    ssh.execute_ssh_command(SSH_HOST, SSH_USER, SSH_PORT, command)
 
-    virt.create_virtual_machine(
-        connect=CONNECT_URI,
-        name=f"{vm.vm_name}",
-        metadata_description=vm.tags,
-        ram=10240,
-        vcpus=2,
-        disk_path=f"/var/lib/libvirt/images/{vm.vm_name}.qcow2",
-        disk_format="qcow2",
-        os_variant="linux2022",
-        network_bridge="virbr0",
-        network_model="virtio",
-        user_data=file,
-        import_option=True
-    )
+    try:
+        # Create a temporary file for user-data
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".cloud-config") as temp_file:
+            temp_file.write(decoded_user_data)
+            temp_file.flush()
+            temp_file_path = temp_file.name
+        
+        logger.info(f"Temporary file created at {temp_file_path}")
 
-    ssh.execute_ssh_command(SSH_HOST, SSH_USER, SSH_PORT, f'rm {file}')
+        # Execute the virt-install command
+        virt.create_virtual_machine(
+            connect=CONNECT_URI,
+            name=f"{vm.vm_name}",
+            metadata_description=vm.tags,
+            ram=10240,
+            vcpus=2,
+            disk_path=f"/var/lib/libvirt/images/{vm.vm_name}.qcow2",
+            disk_format="qcow2",
+            os_variant="linux2022",
+            network_bridge="virbr0",
+            network_model="virtio",
+            user_data=temp_file_path,
+            import_option=True
+        )
+    
+    except Exception as e:
+        logger.error(f"virt-install failed: {e.stderr}")
+        raise
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+            logger.info(f"Temporary file deleted: {temp_file_path}")
 
+    logger.info(vm.tags)
     return 'Success'
 
 @app.get("/v1/list")
