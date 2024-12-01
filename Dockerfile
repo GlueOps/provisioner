@@ -14,12 +14,6 @@ COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} Pipfile Pipfile
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} Pipfile.lock Pipfile.lock
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} app/ /code/app
 
-COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscaled /app/tailscaled
-COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} --from=docker.io/tailscale/tailscale:stable /usr/local/bin/tailscale /app/tailscale
-
-
-
-
 RUN devbox run -- echo "Installed Packages."
 RUN devbox run pipenv install
 # https://stackoverflow.com/questions/34370962/no-module-named-cffi-backend
