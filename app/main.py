@@ -3,8 +3,8 @@ from fastapi.security import APIKeyHeader
 from typing import Optional
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
-from util import ssh, virt, virsh, formatter
-import os, glueops.setup_logging, traceback, base64, yaml, tempfile
+from util import ssh, virt, virsh, formatter, b64
+import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -48,7 +48,7 @@ app = FastAPI()
 class Vm(BaseModel):
     vm_name: str = Field(...,example = 'dinosaur-cat')
     tags: dict = Field(...,example = {"owner": {"name": "john-doe"}})
-    user_data: str = Field(...,example = 'cloud-init user data-data base64 encoded')
+    user_data: str = Field(...,example = 'I2Nsb3VkLWNvbmZpZwpydW5jbWQ6CiAgLSBbJ3Bhc3N3ZCcsICctZCcsICdkZWJpYW4nXQo=')
     image: str = Field(...,example = 'v0.72.0-rc4')
 
 class VmMeta(BaseModel):
@@ -93,7 +93,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         virt.create_virtual_machine(
             connect=CONNECT_URI,
             name=f"{vm.vm_name}",
-            metadata_description=vm.tags,
+            metadata_description=encoder.encode_string(json.dumps(vm.tags)),
             ram=10240,
             vcpus=2,
             disk_path=f"/var/lib/libvirt/images/{vm.vm_name}.qcow2",
