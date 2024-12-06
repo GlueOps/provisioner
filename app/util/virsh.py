@@ -1,4 +1,5 @@
-import subprocess, os, glueops.setup_logging, traceback, re
+from . import b64
+import subprocess, os, glueops.setup_logging, traceback, re, json
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
@@ -97,6 +98,6 @@ def format_vm_list(connect, output):
             'id': dom_id,
             'name': name,
             'state': state,
-            'description': describe_vm(connect, name)
+            'description': json.loads(encoder.decode_string(describe_vm(connect, name)))
         })
     return domains
