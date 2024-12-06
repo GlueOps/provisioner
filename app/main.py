@@ -93,7 +93,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         virt.create_virtual_machine(
             connect=CONNECT_URI,
             name=f"{vm.vm_name}",
-            metadata_description=encoder.encode_string(json.dumps(vm.tags)),
+            metadata_description=b64.encode_string(json.dumps(vm.tags)),
             ram=10240,
             vcpus=2,
             disk_path=f"/var/lib/libvirt/images/{vm.vm_name}.qcow2",
