@@ -98,6 +98,6 @@ def format_vm_list(connect, output):
             'id': dom_id,
             'name': name,
             'state': state,
-            'description': json.loads(encoder.decode_string(describe_vm(connect, name)))
+            'description': json.loads(b64.decode_string(describe_vm(connect, name)))
         })
     return domains
