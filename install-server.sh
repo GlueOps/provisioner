@@ -70,3 +70,10 @@ if ! systemctl is-active --quiet dnsmasq-nix || ! systemctl is-active --quiet li
     echo "Error: One or more services failed to start properly"
     exit 1
 fi
+
+# Replace '#Port' with 'Port 22' and 'Port 2222'
+sudo sed -i 's/^#Port .*/Port 22\nPort 2222/' /etc/ssh/sshd_config
+
+# Restart the ssh service to apply changes
+echo "Restarting ssh service."
+sudo systemctl restart ssh
