@@ -3,11 +3,6 @@ set -e
 
 echo -e "\n\nEverything is now getting setup. This process will take a few minutes...\n\n"
 
-sudo apt update && sudo apt install gpg jq -y && sudo apt clean
-
-#remove unattended upgrades
-sudo apt-get remove --purge unattended-upgrades || true
-
 #Install tailscale
 curl -fsSL https://tailscale.com/install.sh | sh
 
@@ -68,9 +63,13 @@ sudo systemctl daemon-reload
 sudo systemctl enable dnsmasq-nix libvirtd-nix
 sudo systemctl start dnsmasq-nix libvirtd-nix
 
-# Verify the service is running
-echo "Checking dnsmasq service status..."
-sudo systemctl status dnsmasq-nix --no-pager
+sudo systemctl start dnsmasq-nix libvirtd-nix
+ 
+# Verify services are actually running
+if ! systemctl is-active --quiet dnsmasq-nix || ! systemctl is-active --quiet libvirtd-nix; then
+    echo "Error: One or more services failed to start properly"
+    exit 1
+fi
 
-echo "Checking libvirtd service status..."
-sudo systemctl status libvirtd-nix --no-page
+# Append DNS server to dnsmasq.conf
+echo "server=1.1.1.1" | sudo tee -a /etc/dnsmasq.conf
