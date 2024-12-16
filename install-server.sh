@@ -35,7 +35,7 @@ Description=DNS caching server (via Nix)
 After=network.target
 
 [Service]
-ExecStart=$DNSMASQ_BIN --no-daemon
+ExecStart=$DNSMASQ_BIN --no-daemon --no-resolv --server=1.1.1.1 --server=8.8.8.8
 Restart=always
 
 [Install]
@@ -70,6 +70,3 @@ if ! systemctl is-active --quiet dnsmasq-nix || ! systemctl is-active --quiet li
     echo "Error: One or more services failed to start properly"
     exit 1
 fi
-
-# Append DNS server to dnsmasq.conf
-echo "server=1.1.1.1" | sudo tee -a /etc/dnsmasq.conf
