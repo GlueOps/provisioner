@@ -47,7 +47,7 @@ app = FastAPI()
 
 class Vm(BaseModel):
     vm_name: str = Field(...,example = 'dinosaur-cat')
-    tags: dict = Field(...,example = {"owner": {"name": "john-doe"}})
+    tags: dict = Field(...,example = {"owner": "john-doe"})
     user_data: str = Field(...,example = 'I2Nsb3VkLWNvbmZpZwpydW5jbWQ6CiAgLSBbJ3Bhc3N3ZCcsICctZCcsICdkZWJpYW4nXQo=')
     image: str = Field(...,example = 'v0.72.0-rc4')
 
