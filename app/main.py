@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 from util import ssh, virt, virsh, formatter, b64, regions
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
-import traceback
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
