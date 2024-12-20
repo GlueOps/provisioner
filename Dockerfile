@@ -12,11 +12,12 @@ COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} devbox.json devbox.json
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} devbox.lock devbox.lock
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} Pipfile Pipfile
 COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} Pipfile.lock Pipfile.lock
-COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} app/ /code/app
 
 RUN devbox run -- echo "Installed Packages."
 RUN devbox run pipenv install
 # https://stackoverflow.com/questions/34370962/no-module-named-cffi-backend
 RUN devbox run fix_cffi 
+
+COPY --chown=${DEVBOX_USER}:${DEVBOX_USER} app/ /code/app
 
 CMD [ "devbox", "run", "k8s"]
