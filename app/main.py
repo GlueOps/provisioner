@@ -1,22 +1,22 @@
-from fastapi import FastAPI, Security, HTTPException, Depends, status, requests
+from fastapi import FastAPI, Security, HTTPException, Depends, status, requests, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
-from typing import Optional
+from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
-from util import ssh, virt, virsh, formatter, b64
+from util import ssh, virt, virsh, formatter, b64, regions
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json
+from schemas.schemas import ExistingVm, Vm, VmMeta, Message
+import traceback
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
-
+BAREMETAL_SERVER_CONFIGS = os.getenv('BAREMETAL_SERVER_CONFIGS', '[]')
+REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
 #ENV variables
-SSH_USER = os.getenv('SSH_USER')
-SSH_HOST = os.getenv('SSH_HOST')
-SSH_PORT = os.getenv('SSH_PORT')
-API_TOKEN = os.getenv('API_TOKEN')
 
-CONNECT_URI = f'qemu+ssh://{SSH_USER}@{SSH_HOST}:{SSH_PORT}/system'
+API_TOKEN = os.getenv('API_TOKEN')
 
 api_key_header = APIKeyHeader(name="Authorization")
 
@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
         Exception: env variables not set
     """
     
-    required_env_vars = ["SSH_USER", "SSH_HOST", "SSH_PORT", "API_TOKEN"]
+    required_env_vars = [ "API_TOKEN"]
 
     for var in required_env_vars:
         if var not in os.environ:
@@ -45,14 +45,21 @@ async def lifespan(app: FastAPI):
 app = FastAPI()
 # app = FastAPI(lifespan=lifespan)
 
-class Vm(BaseModel):
-    vm_name: str = Field(...,example = 'dinosaur-cat')
-    tags: dict = Field(...,example = {"owner": "john-doe"})
-    user_data: str = Field(...,example = 'I2Nsb3VkLWNvbmZpZwpydW5jbWQ6CiAgLSBbJ3Bhc3N3ZCcsICctZCcsICdkZWJpYW4nXQo=')
-    image: str = Field(...,example = 'v0.72.0-rc4')
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Extract the full stack trace
+    stack_trace = traceback.format_exc()
+    
+    # Return the full stack trace in the response
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An internal server error occurred.",
+            "error": str(exc),
+            "traceback": stack_trace,  # Include the full stack trace
+        },
+    )
 
-class VmMeta(BaseModel):
-    vm_name: str = Field(...,example = 'dinosaur-cat')
 
 def get_api_key(api_key: Optional[str] = Security(api_key_header)):
     if api_key == API_TOKEN:
@@ -64,10 +71,10 @@ def get_api_key(api_key: Optional[str] = Security(api_key_header)):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-@app.post("/v1/create")
+@app.post("/v1/create", response_model=Message)
 async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     logger.info(vm)
-
+    vm_specs = regions.get_instance_specs(vm.region_name, vm.instance_type, REGIONS)
     # Decode user data
     decoded_user_data = formatter.fix_indentation(base64.b64decode(vm.user_data).decode('utf-8').strip())
 
@@ -78,7 +85,8 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         raise ValueError(f"Invalid YAML in user data: {e}")
 
     command = f'TAG={vm.image} VM_NAME={vm.vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.23.1/tools/developer-setup/download-qcow2-image.sh)'
-    ssh.execute_ssh_command(SSH_HOST, SSH_USER, SSH_PORT, command)
+    cfg = regions.get_server_config(vm.region_name, REGIONS)
+    ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
     try:
         # Create a temporary file for user-data
@@ -91,11 +99,11 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
 
         # Execute the virt-install command
         virt.create_virtual_machine(
-            connect=CONNECT_URI,
+            connect=cfg.connect_uri,
             name=f"{vm.vm_name}",
             metadata_description=b64.encode_string(json.dumps(vm.tags)),
-            ram=10240,
-            vcpus=2,
+            ram=vm_specs.memory_mb,
+            vcpus=vm_specs.vcpus,
             disk_path=f"/var/lib/libvirt/images/{vm.vm_name}.qcow2",
             disk_format="qcow2",
             os_variant="linux2022",
@@ -115,31 +123,47 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             logger.info(f"Temporary file deleted: {temp_file_path}")
 
     logger.info(vm.tags)
-    return 'Success'
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
-@app.get("/v1/list")
+@app.get("/v1/regions", response_model=List[regions.SSHConfig])
+async def list_regions(api_key: str = Depends(get_api_key)):
+    region_configs = regions.get_enabled_regions_only(REGIONS)
+    return region_configs
+
+@app.get("/v1/list", response_model=List[ExistingVm])
 async def list_vms(api_key: str = Depends(get_api_key)):
-    return virsh.list_vms(CONNECT_URI)
+    all_vms = []
+    for cfg in REGIONS:
+        logger.info(f"Requesting VM list from: {cfg.connect_uri}")
+        try:
+            all_vms.extend(virsh.list_vms(cfg.connect_uri, cfg.region_name))
+        except Exception as e:
+            logger.error(f"Error listing VMs from {cfg.connect_uri}: {e}")
+            logger.error(traceback.format_exc())
+    return [ExistingVm(**item) for item in all_vms]
 
-@app.post("/v1/start")
+@app.post("/v1/start", response_model=Message)
 async def start_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
-    virsh.start_vm(CONNECT_URI, vm.vm_name)
-    return 'Success'
+    cfg = regions.get_server_config(vm.region_name, REGIONS)
+    virsh.start_vm(cfg.connect_uri, vm.vm_name)
+    return JSONResponse(status_code=200, content={"message": "Success"})
     
-@app.post("/v1/stop")
+@app.post("/v1/stop", response_model=Message)
 async def stop_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
-    virsh.destroy_vm(CONNECT_URI, vm.vm_name)
-    return 'Success'
+    cfg = regions.get_server_config(vm.region_name, REGIONS)
+    virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
-@app.delete("/v1/delete")
+@app.delete("/v1/delete", response_model=Message)
 async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
+    cfg = regions.get_server_config(vm.region_name, REGIONS)
     try:
-        virsh.destroy_vm(CONNECT_URI, vm.vm_name)
+        virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
     except Exception as e:
         pass
     finally:
-        virsh.undefine_vm(CONNECT_URI, vm.vm_name, remove_all_storage=True)
-    return 'Success'
+        virsh.undefine_vm(cfg.connect_uri, vm.vm_name, remove_all_storage=True)
+    return JSONResponse(status_code=200, content={"message": "Success"})
 
 @app.get("/health")
 async def health():
