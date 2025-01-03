@@ -31,7 +31,7 @@ Here is an example ACL that does the following:
 - `tim.cook@glueops.dev` is part of `group:app-prod-provisioner-developers`
 - `tim.cook@glueops.dev` can access their own instances tagged with `tag:tim-cook` however because we are using a SVC Admin account to tag the machines `tim.cook` doesn't actually own the tag itself.
 
-The goals of this ACL policy are to allow the provisioner API to access "provisioner nodes" via SSH (port 2222 since tailscale SSH takes over port 22). `tim.cook` needs to be able to admistrate provisioner nodes so he is part of `group:app-prod-provisioner-developers` otherwise he can be kept out of this group. `tim.cook` also uses a workspace himself so he needs to have a tag himself. Any user that uses a developer workspace will need their own tag so that this slack workspace bot can assign machines to them (e.g.  `tag:tim-cook`).
+The goals of this ACL policy are to allow the provisioner API to access "provisioner nodes" via SSH (port 2222 since tailscale SSH takes over port 22). `tim.cook` needs to be able to administrate provisioner nodes so he is part of `group:app-prod-provisioner-developers` otherwise he can be kept out of this group. `tim.cook` also uses a workspace himself so he needs to have a tag himself. Any user that uses a developer workspace will need their own tag so that the [slack workspace bot](https://github.com/GlueOps/slackbot-developer-workspaces) can assign machines to them (e.g.  `tag:tim-cook`).
 
 When testing new policies/ACLs it's best to just create a separate tailnet/tailscale account for testing.
 
