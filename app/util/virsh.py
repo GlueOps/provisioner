@@ -54,13 +54,13 @@ def describe_vm(connect, vm_name):
         logger.error(traceback.format_exc())
         raise
 
-def list_vms(connect):
+def list_vms(connect, region_name):
     """Start a virtual machine."""
     cmd = ["virsh", "--connect", connect, "list", "--all"]
     try:
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
         logger.info(f"{result.stdout}")
-        vms = format_vm_list(connect, result.stdout)
+        vms = format_vm_list(connect, region_name, result.stdout)
         logger.info(vms)
         return vms
     except subprocess.CalledProcessError as e:
@@ -69,7 +69,7 @@ def list_vms(connect):
         raise
 
 
-def format_vm_list(connect, output):
+def format_vm_list(connect, region_name, output):
     """
     Parses the output of 'virsh list --all' and returns a list of domains with a description.
     Each domain is represented as a dictionary with keys: id, name, state, description.
@@ -95,9 +95,10 @@ def format_vm_list(connect, output):
 
         dom_id, name, state = parts
         domains.append({
-            'id': dom_id,
+            'dom_id': dom_id,
             'name': name,
+            'region_name': region_name,
             'state': state,
-            'description': json.loads(b64.decode_string(describe_vm(connect, name)))
+            'tags': json.loads(b64.decode_string(describe_vm(connect, name)))
         })
     return domains
