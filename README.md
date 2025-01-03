@@ -1,6 +1,6 @@
 # provisioner
 
-FastAPI to provision virtualmachines using through libvirt via SSH.
+FastAPI to provision virtualmachines using libvirt via SSH.
 
 # Provisioner
 
