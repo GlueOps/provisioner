@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from util import ssh, virt, virsh, formatter, b64, regions
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -83,7 +84,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in user data: {e}")
 
-    command = f'TAG={vm.image} VM_NAME={vm.vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.23.1/tools/developer-setup/download-qcow2-image.sh)'
+    command = f'TAG={vm.image} VM_NAME={vm.vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/heads/feat-libvirt-improvements/tools/developer-setup/download-qcow2-image.sh)'
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
@@ -172,3 +173,19 @@ async def health():
         dict: health status
     """
     return {"status": "healthy"}
+    
+
+def periodic_task():
+    for config in REGIONS:
+        ssh.execute_ssh_command(config.host, config.user, config.port, "bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/heads/feat-libvirt-improvements/tools/developer-setup/cache-images-for-libvirt.sh)")
+
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(periodic_task, "interval", seconds=5)
+    scheduler.start()
+
+@app.on_event("shutdown")
+def shutdown_scheduler():
+    scheduler.shutdown()
