@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Dict
 
 class ExistingVm(BaseModel):
-    dom_id: int = Field(...,example = 1)
+    dom_id: str = Field(...,example = "1")
     name: str = Field(...,example = 'dinosaur-cat')
     region_name: str = Field(...,example = 'andromeda')
     state: str = Field(...,example = 'running')
