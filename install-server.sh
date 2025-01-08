@@ -58,7 +58,7 @@ sudo sed -i 's/^#Port .*/Port 22\nPort 2222/' /etc/ssh/sshd_config
 
 
 # Use ssh to append the public key to the remote authorized_keys file
-sudo echo '$PUBLIC_KEY' >> ~/.ssh/authorized_keys
+sudo echo $PUBLIC_KEY >> ~/.ssh/authorized_keys
 
 # Restart the ssh service to apply changes
 echo "Restarting ssh service."
