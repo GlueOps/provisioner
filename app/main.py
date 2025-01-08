@@ -183,7 +183,7 @@ def periodic_task():
 @app.on_event("startup")
 def start_scheduler():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(periodic_task, "interval", seconds=5)
+    scheduler.add_job(periodic_task, "interval", seconds=120)
     scheduler.start()
 
 @app.on_event("shutdown")
