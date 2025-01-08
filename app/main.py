@@ -84,7 +84,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in user data: {e}")
 
-    command = f'TAG={vm.image} VM_NAME={vm.vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/heads/feat-libvirt-improvements/tools/developer-setup/download-qcow2-image.sh)'
+    command = f'TAG={vm.image} VM_NAME={vm.vm_name} bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.26.0/tools/developer-setup/download-qcow2-image.sh)'
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
