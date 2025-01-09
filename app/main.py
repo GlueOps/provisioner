@@ -5,9 +5,10 @@ from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
 from util import ssh, virt, virsh, formatter, b64, regions
-import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json
+import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
 from apscheduler.schedulers.background import BackgroundScheduler
+
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
@@ -132,14 +133,30 @@ async def list_regions(api_key: str = Depends(get_api_key)):
 
 @app.get("/v1/list", response_model=List[ExistingVm])
 async def list_vms(api_key: str = Depends(get_api_key)):
-    all_vms = []
-    for cfg in REGIONS:
-        logger.info(f"Requesting VM list from: {cfg.connect_uri}")
+    async def list_vm_for_region(cfg):
         try:
-            all_vms.extend(virsh.list_vms(cfg.connect_uri, cfg.region_name))
+            logger.info(f"Requesting VM list from: {cfg.connect_uri}")
+            # Use `asyncio.to_thread` to call a blocking function; 
+            # if virsh.list_vms is already async, just call it directly.
+            return await asyncio.to_thread(virsh.list_vms, cfg.connect_uri, cfg.region_name)
         except Exception as e:
             logger.error(f"Error listing VMs from {cfg.connect_uri}: {e}")
             logger.error(traceback.format_exc())
+            return []
+
+    tasks = [list_vm_for_region(cfg) for cfg in REGIONS]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    all_vms = []
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            # If you used `return_exceptions=False`, this code wouldn't be reached 
+            # because the first exception would raise.
+            # With `return_exceptions=True`, you can handle them per-task.
+            logger.error(f"Error with region {REGIONS[i].connect_uri}: {result}")
+        else:
+            all_vms.extend(result)
+
     return [ExistingVm(**item) for item in all_vms]
 
 @app.post("/v1/start", response_model=Message)
