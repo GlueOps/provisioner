@@ -142,7 +142,7 @@ async def list_vms(api_key: str = Depends(get_api_key)):
         except Exception as e:
             logger.error(f"Error listing VMs from {cfg.connect_uri}: {e}")
             logger.error(traceback.format_exc())
-            return []
+            raise
 
     tasks = [list_vm_for_region(cfg) for cfg in REGIONS]
     results = await asyncio.gather(*tasks, return_exceptions=True)
