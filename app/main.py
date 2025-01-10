@@ -192,46 +192,7 @@ async def health():
 
 
 
-LAST_TAG = None
-LAST_ASSETS = set()
-
-def check_for_new_release():
-    global LAST_TAG, LAST_ASSETS
-    url = "https://api.github.com/repos/glueops/codespaces/releases?per_page=1"
-    
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        releases = response.json()
-        
-        if not releases:
-            print("No releases returned from the API.")
-            return
-        
-        latest_release = releases[0]
-        new_tag = latest_release.get("tag_name", None)
-        
-        assets = latest_release.get("assets", [])
-        new_assets = set(asset.get("browser_download_url") for asset in assets)
-
-        # Consolidated check:
-        if new_tag != LAST_TAG or new_assets != LAST_ASSETS:
-            if new_tag != LAST_TAG:
-                print("Hello world (New tag detected!)")
-            
-            if new_assets != LAST_ASSETS:
-                print("Hello world (New assets detected!)")
-            
-            # Update global state
-            LAST_TAG = new_tag
-            LAST_ASSETS = new_assets
-
-    except requests.exceptions.RequestException as err:
-        print(f"Request failed: {err}")
-
-    
 release_watcher = github.ReleaseWatcher()
-
 def periodic_task():
     for config in REGIONS:
         if release_watcher.check_for_new_release():
