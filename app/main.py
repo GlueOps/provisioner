@@ -4,7 +4,7 @@ from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
-from util import ssh, virt, virsh, formatter, b64, regions
+from util import ssh, virt, virsh, formatter, b64, regions, github
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -189,16 +189,57 @@ async def health():
         dict: health status
     """
     return {"status": "healthy"}
+
+
+
+LAST_TAG = None
+LAST_ASSETS = set()
+
+def check_for_new_release():
+    global LAST_TAG, LAST_ASSETS
+    url = "https://api.github.com/repos/glueops/codespaces/releases?per_page=1"
     
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        releases = response.json()
+        
+        if not releases:
+            print("No releases returned from the API.")
+            return
+        
+        latest_release = releases[0]
+        new_tag = latest_release.get("tag_name", None)
+        
+        assets = latest_release.get("assets", [])
+        new_assets = set(asset.get("browser_download_url") for asset in assets)
+
+        # Consolidated check:
+        if new_tag != LAST_TAG or new_assets != LAST_ASSETS:
+            if new_tag != LAST_TAG:
+                print("Hello world (New tag detected!)")
+            
+            if new_assets != LAST_ASSETS:
+                print("Hello world (New assets detected!)")
+            
+            # Update global state
+            LAST_TAG = new_tag
+            LAST_ASSETS = new_assets
+
+    except requests.exceptions.RequestException as err:
+        print(f"Request failed: {err}")
+
+    
+release_watcher = github.ReleaseWatcher()
 
 def periodic_task():
     for config in REGIONS:
-        ssh.execute_ssh_command(config.host, config.user, config.port, "bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.26.0/tools/developer-setup/cache-images-for-libvirt.sh)")
+        if release_watcher.check_for_new_release():
+            ssh.execute_ssh_command(config.host, config.user, config.port, "bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.26.0/tools/developer-setup/cache-images-for-libvirt.sh)")
 
-
+scheduler = BackgroundScheduler()
 @app.on_event("startup")
 def start_scheduler():
-    scheduler = BackgroundScheduler()
     scheduler.add_job(periodic_task, "interval", seconds=120)
     scheduler.start()
 
