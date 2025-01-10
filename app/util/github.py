@@ -20,7 +20,7 @@ class ReleaseWatcher:
     def check_for_new_release(self):
         """
         Checks the endpoint for the latest release. If the tag or asset URLs
-        differ from the stored state, prints "Hello world".
+        differ from the stored state it returns True
         """
         try:
             response = requests.get(self.url)
