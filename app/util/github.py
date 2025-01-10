@@ -1,5 +1,3 @@
-# myreleasewatcher.py
-
 import requests
 import os, glueops.setup_logging, traceback, json
 
