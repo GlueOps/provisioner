@@ -196,7 +196,7 @@ def update_image_cache_on_provisioner_nodes():
     for config in REGIONS:
         if release_watcher.check_for_new_release():
             ssh.execute_ssh_command(config.host, config.user, config.port, "bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.26.0/tools/developer-setup/cache-images-for-libvirt.sh)")
-    logger.info("Finished caching image")
+            logger.info(f"Finished caching image on {config.host}")
 
 @app.get("/update-image-cache")
 async def update_image_cache(background_tasks: BackgroundTasks):
