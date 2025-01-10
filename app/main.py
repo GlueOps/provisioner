@@ -190,9 +190,10 @@ async def health():
     """
     return {"status": "healthy"}
 
-release_watcher = github.ReleaseWatcher()
+
 def update_image_cache_on_provisioner_nodes():
     logger.info("Running image cache")
+    release_watcher = github.ReleaseWatcher()
     if release_watcher.check_for_new_release():
         for config in REGIONS:
             ssh.execute_ssh_command(config.host, config.user, config.port, "bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.26.0/tools/developer-setup/cache-images-for-libvirt.sh)")
