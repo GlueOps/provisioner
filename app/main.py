@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Security, HTTPException, Depends, status, requests, Request
+from fastapi import FastAPI, Security, HTTPException, Depends, status, requests, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from util import ssh, virt, virsh, formatter, b64, regions, github
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
-from apscheduler.schedulers.background import BackgroundScheduler
+
 
 
 # Configure logging
@@ -191,19 +191,14 @@ async def health():
     return {"status": "healthy"}
 
 
-
-release_watcher = github.ReleaseWatcher()
-def periodic_task():
+def update_image_cache_on_provisioner_nodes():
+    release_watcher = github.ReleaseWatcher()
     for config in REGIONS:
         if release_watcher.check_for_new_release():
             ssh.execute_ssh_command(config.host, config.user, config.port, "bash <(curl https://raw.githubusercontent.com/GlueOps/development-only-utilities/refs/tags/v0.26.0/tools/developer-setup/cache-images-for-libvirt.sh)")
 
-scheduler = BackgroundScheduler()
-@app.on_event("startup")
-def start_scheduler():
-    scheduler.add_job(periodic_task, "interval", seconds=120)
-    scheduler.start()
+@app.get("/update-image-cache")
+async def update_image_cache():
+    background_tasks.add_task(update_image_cache_on_provisioner_nodes)
 
-@app.on_event("shutdown")
-def shutdown_scheduler():
-    scheduler.shutdown()
+    return {"message": "Caching latest image"}
