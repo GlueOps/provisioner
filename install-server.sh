@@ -56,6 +56,7 @@ sudo virsh net-autostart default
 
 # Replace '#Port' with 'Port 22' and 'Port 2222'
 sudo sed -i 's/^#Port .*/Port 22\nPort 2222/' /etc/ssh/sshd_config
+sudo sed -i 's/^#PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config
 
 
 # Use ssh to append the public key to the remote authorized_keys file
