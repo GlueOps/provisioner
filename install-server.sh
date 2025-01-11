@@ -11,6 +11,7 @@ read -p "Enter the tailscale auth key that will be used with --auth-key. This au
 echo "Please paste your public key (e.g., contents of id_rsa.pub), then press Enter: "
 read -r PUBLIC_KEY
 
+sudo timedatectl set-timezone UTC
 
 # Get the current hostname
 CURRENT_HOSTNAME=$(hostname)
