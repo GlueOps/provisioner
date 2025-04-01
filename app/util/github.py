@@ -1,48 +1,34 @@
 import requests
-import os, glueops.setup_logging, traceback, json
+import os, glueops.setup_logging, traceback
 
 # Configure logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 
-class ReleaseWatcher:
-    def __init__(self, url="https://api.github.com/repos/glueops/codespaces/releases?per_page=1"):
-        """
-        Initialize the ReleaseWatcher with a default URL to check for new releases.
-        Stores internal state for the last tag and last assets.
-        """
-        self.url = url
-        self.last_tag = None
-        self.last_assets = set()
+def get_codespace_releases(environment):
+    """
+    Checks GitHub API for releases.
+    Fetches the latest 5 stable releases and the latest 5 releases (including prereleases).
+    """
+    try:
+        response = requests.get('https://api.github.com/repos/glueops/codespaces/releases?per_page=10')
+        response.raise_for_status()
+        releases = response.json()
 
-    def check_for_new_release(self):
-        """
-        Checks the endpoint for the latest release. If the tag or asset URLs
-        differ from the stored state it returns True
-        """
-        try:
-            response = requests.get(self.url)
-            response.raise_for_status()
-            releases = response.json()
-            
-            if not releases:
-                logger.info("No releases returned from the API.")
-                return
-            
-            latest_release = releases[0]
-            new_tag = latest_release.get("tag_name", None)
-            assets = latest_release.get("assets", [])
-            new_assets = set(asset.get("browser_download_url") for asset in assets)
+        if not releases:
+            logger.error("No releases returned from the API.")
+            raise ValueError("No releases found")
+        
+        if environment == 'nonprod':
+            # Get the latest 5 releases (including prereleases)
+            latest_any = [release["tag_name"] for release in releases[:5]]
+            return latest_any
 
-            # Consolidated check for new tag or new assets:
-            if new_tag != self.last_tag or new_assets != self.last_assets:
-                logger.info(f"new tag: {new_tag} or new asset_urls: {new_assets}")
-                
-                # Update internal state
-                self.last_tag = new_tag
-                self.last_assets = new_assets
-                return True
+        if environment == 'prod':
+            # Get the latest 5 stable releases (filter out prereleases)
+            stable_releases = [release["tag_name"] for release in releases if not release.get("prerelease")][:5]
+            return stable_releases
 
-        except requests.exceptions.RequestException as err:
-            logger.error(f"Request failed: {traceback.format_exc()}")
-            raise
+    except requests.exceptions.RequestException as err:
+        logger.error(f"Request failed: {traceback.format_exc()}")
+        raise
