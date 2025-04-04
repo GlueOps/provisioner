@@ -15,6 +15,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 BAREMETAL_SERVER_CONFIGS = os.getenv('BAREMETAL_SERVER_CONFIGS', '[]')
 REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
+PROVISIONER_ENVIRONMENT = os.getenv('PROVISIONER_ENVIRONMENT')
 #ENV variables
 
 API_TOKEN = os.getenv('API_TOKEN')
@@ -191,5 +192,5 @@ async def health():
     return {"status": "healthy"}
 
 @app.get("/v1/get-images")
-async def get_vm_images(image_env = 'prod'):
-    return { "images": github.get_codespace_releases(image_env) }
+async def get_vm_images():
+    return { "images": github.get_codespace_releases(PROVISIONER_ENVIRONMENT) }
