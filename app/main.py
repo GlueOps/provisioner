@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
-from contextlib import asynccontextmanager
 from util import ssh, virt, virsh, formatter, b64, regions, github
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
@@ -15,37 +14,16 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 BAREMETAL_SERVER_CONFIGS = os.getenv('BAREMETAL_SERVER_CONFIGS', '[]')
 REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
-PROVISIONER_ENVIRONMENT = os.getenv('PROVISIONER_ENVIRONMENT')
-#ENV variables
-
-API_TOKEN = os.getenv('API_TOKEN')
+try:
+    PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
+    API_TOKEN = os.environ['API_TOKEN']
+except KeyError as e:
+    logger.critical(f"Required environment variable {e} is not set")
+    raise SystemExit(1)
 
 api_key_header = APIKeyHeader(name="Authorization")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Startup function to test env variables
-    crashes if env variables are not set
-
-    Args:
-        app (FastAPI)
-
-    Raises:
-        Exception: env variables not set
-    """
-    
-    required_env_vars = [ "API_TOKEN"]
-
-    for var in required_env_vars:
-        if var not in os.environ:
-            raise Exception(f"Environment variable {var} is not set.")
-    yield
-
-#define the FastAPI app with lifespan
-#for startup function
-
 app = FastAPI()
-# app = FastAPI(lifespan=lifespan)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
