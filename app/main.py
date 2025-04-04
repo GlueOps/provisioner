@@ -14,8 +14,12 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 BAREMETAL_SERVER_CONFIGS = os.getenv('BAREMETAL_SERVER_CONFIGS', '[]')
 REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
-PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
-API_TOKEN = os.environ['API_TOKEN']
+try:
+    PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
+    API_TOKEN = os.environ['API_TOKEN']
+except KeyError as e:
+    logger.critical(f"Required environment variable {e} is not set")
+    raise SystemExit(1)
 
 api_key_header = APIKeyHeader(name="Authorization")
 
