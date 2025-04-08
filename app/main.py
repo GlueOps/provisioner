@@ -69,7 +69,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
-    command = f'qemu-img resize /var/lib/libvirt/images/{vm.vm_name}.qcow2 120G'
+    command = f'qemu-img resize /var/lib/libvirt/images/{vm.vm_name}.qcow2 {vm_specs.storage_mb}M'
     ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
     try:
