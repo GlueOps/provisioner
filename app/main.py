@@ -17,7 +17,7 @@ REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
 try:
     PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
     API_TOKEN = os.environ['API_TOKEN']
-    IMAGE_URL = os.environ['IMAGE_URL']
+    DOWNLOAD_SERVER_URL = os.environ['DOWNLOAD_SERVER_URL']
 except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
@@ -65,7 +65,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in user data: {e}")
 
-    command = f'bash <(curl -L -o "/var/lib/libvirt/images/{vm.vm_name}.qcow2" "{IMAGE_URL}/{vm.image}.qcow2")'
+    command = f'bash <(curl -L -o "/var/lib/libvirt/images/{vm.vm_name}.qcow2" "{DOWNLOAD_SERVER_URL}/{vm.image}.qcow2")'
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
