@@ -42,21 +42,27 @@ def start_vm(connect, vm_name):
         logger.error(traceback.format_exc())
         raise
 
-def describe_vm(connect, vm_name):
-    """describe a virtual machine."""
-    cmd = ["virsh", "--connect", connect, "desc", vm_name]
-    try:
-        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-        logger.info(f"VM: {vm_name} Description: {result.stdout.strip()}")
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error starting VM '{vm_name}': {e.stderr}")
-        logger.error(traceback.format_exc())
-        raise
-
 def list_vms(connect, region_name):
     """Start a virtual machine."""
-    cmd = ["virsh", "--connect", connect, "list", "--all"]
+    bash_get_all_vms_script = f"""
+    printf "%-5s %-30s %-12s %-40s\\n" "Id" "Name" "State" "Description"
+    echo "-------------------------------------------------------------------------------------------------------------"
+    
+    for name in $(virsh --connect {connect} list --all --name); do
+        [ -z "$name" ] && continue
+    
+        info=$(virsh --connect {connect} dominfo "$name")
+        id=$(echo "$info" | grep '^Id:' | awk '{{print $2}}')
+        state=$(echo "$info" | grep '^State:' | cut -d: -f2 | xargs)
+        id=${{id:--}}
+    
+        desc=$(virsh --connect {connect} desc "$name" 2>/dev/null | head -n 1)
+        desc=${{desc:-<No description>}}
+    
+        printf "%-5s %-30s %-12s %-40s\\n" "$id" "$name" "$state" "$desc"
+    done
+    """
+    cmd = ["bash", "-c", bash_get_all_vms_script]
     try:
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
         logger.info(f"{result.stdout}")
@@ -89,16 +95,16 @@ def format_vm_list(connect, region_name, output):
         
         # Split the line based on two or more spaces
         parts = re.split(r'\s{2,}', line.strip())
-        if len(parts) != 3:
+        if len(parts) != 4:
             logger.error(f"Unexpected line format: '{line}'")
             raise Exception(f'Unexpected vm line item {line}')
 
-        dom_id, name, state = parts
+        dom_id, name, state, description = parts
         domains.append({
             'dom_id': dom_id,
             'name': name,
             'region_name': region_name,
             'state': state,
-            'tags': json.loads(b64.decode_string(describe_vm(connect, name)))
+            'tags': json.loads(b64.decode_string(description))
         })
     return domains
