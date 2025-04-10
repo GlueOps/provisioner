@@ -121,7 +121,7 @@ async def list_vms(api_key: str = Depends(get_api_key)):
             logger.info(f"Requesting VM list from: {cfg.connect_uri}")
             # Use `asyncio.to_thread` to call a blocking function; 
             # if virsh.list_vms is already async, just call it directly.
-            return await asyncio.to_thread(virsh.list_vms, cfg.connect_uri, cfg.region_name)
+            return await asyncio.to_thread(virsh.list_vms, cfg)
         except Exception as e:
             logger.error(f"Error listing VMs from {cfg.connect_uri}: {e}")
             logger.error(traceback.format_exc())
