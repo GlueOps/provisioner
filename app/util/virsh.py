@@ -70,7 +70,7 @@ def list_vms(region_config):
         vms = format_vm_list(region_config.region_name, result)
         logger.info(vms)
         return vms
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         logger.error(f"Error listing vms")
         logger.error(traceback.format_exc())
         raise
