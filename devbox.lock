@@ -1,51 +1,51 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "libvirt@9.0.0": {
-      "last_modified": "2023-03-03T04:15:01Z",
-      "resolved": "github:NixOS/nixpkgs/0749042bfaa2f4efa70ac829c5387133cfc0a337#libvirt",
+    "libvirt@9.5.0": {
+      "last_modified": "2023-08-14T10:11:06Z",
+      "resolved": "github:NixOS/nixpkgs/de2b8ddf94d6cc6161b7659649594c79bd66c13b#libvirt",
       "source": "devbox-search",
-      "version": "9.0.0",
+      "version": "9.5.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/r37idl75ybw9p55q6scvha0hp59d27dw-libvirt-9.0.0",
+              "path": "/nix/store/qb8m49aqh5lhan25yxcaaanp48j5l71l-libvirt-9.5.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/r37idl75ybw9p55q6scvha0hp59d27dw-libvirt-9.0.0"
+          "store_path": "/nix/store/qb8m49aqh5lhan25yxcaaanp48j5l71l-libvirt-9.5.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/0i1q6mv4b68679gif6xgn24xk28m74cp-libvirt-9.0.0",
+              "path": "/nix/store/d7j15dbv1b2gnvwy58p1y4qgi9xjwzzr-libvirt-9.5.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/0i1q6mv4b68679gif6xgn24xk28m74cp-libvirt-9.0.0"
+          "store_path": "/nix/store/d7j15dbv1b2gnvwy58p1y4qgi9xjwzzr-libvirt-9.5.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/v6bgv3znfa06adg7hy7vaq2da187fs82-libvirt-9.0.0",
+              "path": "/nix/store/d7x6h6ygl6ray55d8v3ix9kxbv9wmhbq-libvirt-9.5.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/v6bgv3znfa06adg7hy7vaq2da187fs82-libvirt-9.0.0"
+          "store_path": "/nix/store/d7x6h6ygl6ray55d8v3ix9kxbv9wmhbq-libvirt-9.5.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/ddk52wfciiv5zd4pvi876j9k60igk755-libvirt-9.0.0",
+              "path": "/nix/store/hqg3g1srwn1jsa7m69dbmy9b909sx70w-libvirt-9.5.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/ddk52wfciiv5zd4pvi876j9k60igk755-libvirt-9.0.0"
+          "store_path": "/nix/store/hqg3g1srwn1jsa7m69dbmy9b909sx70w-libvirt-9.5.0"
         }
       }
     },
