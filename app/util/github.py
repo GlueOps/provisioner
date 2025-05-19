@@ -7,11 +7,11 @@ logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 
 def get_codespace_releases(environment):
     """
-    Checks GitHub API for releases.
-    Fetches the latest 5 stable releases and the latest 5 releases (including prereleases).
+    Checks GitHub API for 30 releases.
+    Filters the retrieved releases for the latest 5 stable releases and the latest 5 releases (including prereleases).
     """
     try:
-        response = requests.get('https://api.github.com/repos/glueops/codespaces/releases?per_page=10')
+        response = requests.get('https://api.github.com/repos/glueops/codespaces/releases')
         response.raise_for_status()
         releases = response.json()
 
