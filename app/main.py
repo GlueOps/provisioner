@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
-from util import ssh, virt, virsh, formatter, b64, regions, github
+from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
 
@@ -18,6 +18,9 @@ try:
     PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
     API_TOKEN = os.environ['API_TOKEN']
     DOWNLOAD_SERVER_URL = os.environ['DOWNLOAD_SERVER_URL']
+    GUACAMOLE_SERVER_URL = os.environ['GUACAMOLE_SERVER_URL']
+    GUACAMOLE_SERVER_USERNAME = os.environ['GUACAMOLE_SERVER_USERNAME']
+    GUACAMOLE_SERVER_PASSWORD = os.environ['GUACAMOLE_SERVER_PASSWORD']
 except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
@@ -96,7 +99,34 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             user_data=temp_file_path,
             import_option=True
         )
-    
+
+        guacamole_token, data_source = guacamole.get_data(
+            GUACAMOLE_SERVER_URL,
+            GUACAMOLE_SERVER_USERNAME,
+            GUACAMOLE_SERVER_PASSWORD
+        )
+
+        connectionGroups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
+        connection_group_id = guacamole.find_group_id_by_name(connectionGroups, vm.user_name)
+        vm_id = guacamole.create_vm(
+            GUACAMOLE_SERVER_URL,
+            guacamole_token,
+            data_source,
+            connection_group_id,
+            vm.vm_name,
+            cfg.host,
+            cfg.port,
+            cfg.user,
+            cfg.private_key
+        )
+        guacamole.grant_connection_permission(
+            GUACAMOLE_SERVER_URL,
+            guacamole_token,
+            data_source,
+            vm.user_name,
+            vm_id
+        )
+
     except Exception as e:
         logger.error(f"virt-install failed: {e.stderr}")
         raise
@@ -158,6 +188,22 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     try:
         virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
+
+        guacamole_token, data_source = guacamole.get_data(
+            GUACAMOLE_SERVER_URL,
+            GUACAMOLE_SERVER_USERNAME,
+            GUACAMOLE_SERVER_PASSWORD
+        )
+
+        connections = guacamole.get_connections(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
+        connection_id = guacamole.find_connection_id_by_name(connections, vm.vm_name)
+        guacamole.delete_vm(
+            GUACAMOLE_SERVER_URL,
+            guacamole_token,
+            data_source,
+            connection_id
+        )
+        
     except Exception as e:
         pass
     finally:
