@@ -123,7 +123,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             GUACAMOLE_SERVER_URL,
             guacamole_token,
             data_source,
-            vm.user_name,
+            vm.tags.owner,
             vm_id
         )
 
@@ -203,7 +203,7 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
             data_source,
             connection_id
         )
-        
+
     except Exception as e:
         pass
     finally:
