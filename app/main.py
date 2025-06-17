@@ -107,14 +107,15 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         )
 
         connectionGroups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
-        connection_group_id = guacamole.find_group_id_by_name(connectionGroups, vm.tags.owner)
+        connection_group_id = guacamole.find_group_id_by_name(connectionGroups, vm.tags.get('owner'))
         vm_id = guacamole.create_vm(
             GUACAMOLE_SERVER_URL,
             guacamole_token,
             data_source,
             connection_group_id,
             vm.vm_name,
-            cfg.host,
+            # cfg.host,
+            vm.tags.get('owner'),
             cfg.port,
             cfg.user,
             cfg.private_key
@@ -123,7 +124,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             GUACAMOLE_SERVER_URL,
             guacamole_token,
             data_source,
-            vm.tags.owner,
+            vm.tags.get('owner'),
             vm_id
         )
 
