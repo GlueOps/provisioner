@@ -115,8 +115,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             data_source,
             connection_group_id,
             vm.vm_name,
-            # cfg.host,
-            vm.tags.get('owner'),
+            cfg.host,
             cfg.port,
             cfg.user,
             LIBVIRT_SERVER_KEY
