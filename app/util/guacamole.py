@@ -140,7 +140,7 @@ def create_vm(
                 "port": server_port,
                 "username": server_user,
                 "private-key": server_private_key,
-                "command": f"ssh root@{vm_name} -i /root/.ssh/guacamole -t 'dev'"
+                "command": f"ssh root@{vm_name}"
             },
             "attributes":{}
         })
