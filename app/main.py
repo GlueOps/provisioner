@@ -198,12 +198,15 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
 
         connections = guacamole.get_connections(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
         connection_id = guacamole.find_connection_id_by_name(connections, vm.vm_name)
-        guacamole.delete_vm(
-            GUACAMOLE_SERVER_URL,
-            guacamole_token,
-            data_source,
-            connection_id
-        )
+        if connection_id is None:
+            logger.warning(f"No matching connection found for VM: {vm.vm_name}. Skipping deletion in Guacamole.")
+        else:
+            guacamole.delete_vm(
+                GUACAMOLE_SERVER_URL,
+                guacamole_token,
+                data_source,
+                connection_id
+            )
 
     except Exception as e:
         pass
