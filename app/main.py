@@ -108,7 +108,8 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         )
 
         connectionGroups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
-        connection_group_id = guacamole.find_group_id_by_name(connectionGroups, vm.tags.get('owner'))
+        owner = vm.tags.get('owner')
+        connection_group_id = guacamole.find_group_id_by_name(connectionGroups, owner)
         vm_id = guacamole.create_vm(
             GUACAMOLE_SERVER_URL,
             guacamole_token,
@@ -120,13 +121,14 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             cfg.user,
             LIBVIRT_SERVER_KEY
         )
-        guacamole.grant_connection_permission(
-            GUACAMOLE_SERVER_URL,
-            guacamole_token,
-            data_source,
-            vm.tags.get('owner'),
-            vm_id
-        )
+        if owner:
+            guacamole.grant_connection_permission(
+                GUACAMOLE_SERVER_URL,
+                guacamole_token,
+                data_source,
+                owner,
+                vm_id
+            )
 
     except Exception as e:
         logger.error(f"virt-install failed: {e.stderr}")
