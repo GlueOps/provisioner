@@ -21,7 +21,8 @@ try:
     GUACAMOLE_SERVER_URL = os.environ['GUACAMOLE_SERVER_URL']
     GUACAMOLE_SERVER_USERNAME = os.environ['GUACAMOLE_SERVER_USERNAME']
     GUACAMOLE_SERVER_PASSWORD = os.environ['GUACAMOLE_SERVER_PASSWORD']
-    LIBVIRT_SERVER_KEY = os.environ['LIBVIRT_SERVER_KEY']
+    BASTION_SERVER_CONNECTION = os.environ['BASTION_SERVER_CONNECTION']
+    BASTION_SERVER_KEY = os.environ['BASTION_SERVER_KEY']
 except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
@@ -116,10 +117,10 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             data_source,
             connection_group_id,
             vm.vm_name,
-            cfg.host,
-            cfg.port,
-            cfg.user,
-            LIBVIRT_SERVER_KEY
+            BASTION_SERVER_CONNECTION.ip,
+            BASTION_SERVER_CONNECTION.port,
+            BASTION_SERVER_CONNECTION.user,
+            BASTION_SERVER_KEY
         )
         if owner:
             guacamole.grant_connection_permission(
