@@ -124,14 +124,6 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             BASTION_SERVER_USER,
             BASTION_SERVER_KEY
         )
-        if owner:
-            guacamole.grant_connection_permission(
-                GUACAMOLE_SERVER_URL,
-                guacamole_token,
-                data_source,
-                owner,
-                vm_id
-            )
 
     except Exception as e:
         logger.error(f"virt-install failed: {e.stderr}")
