@@ -93,11 +93,8 @@ def create_connection_group(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, da
         }, json={
             "parentIdentifier": "ROOT",
             "name": user_name,
-            "attributes": {
-                "max-connections": "",
-                "max-connections-per-user": "",
-                "enable-session-affinity": ""
-            }
+            "type":"ORGANIZATIONAL",
+            "attributes": {}
         })
         response.raise_for_status()
         return response.json().get("identifier")
