@@ -10,7 +10,7 @@ class ExistingVm(BaseModel):
 
 class Vm(BaseModel):
     vm_name: str = Field(...,example = 'dinosaur-cat')
-    tags: dict = Field(...,example = {"owner": "john-doe"})
+    tags: dict = Field(...,example = {"owner": "john.doe@example.com"})
     user_data: str = Field(...,example = 'I2Nsb3VkLWNvbmZpZwpydW5jbWQ6CiAgLSBbJ3Bhc3N3ZCcsICctZCcsICdkZWJpYW4nXQo=')
     image: str = Field(...,example = 'v0.76.0')
     region_name: str = Field(...,example = 'andromeda')
