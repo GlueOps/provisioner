@@ -55,6 +55,34 @@ def find_group_id_by_name(groups_data, user_name):
             return group_details.get('identifier')
     return 'ROOT'
 
+def grant_connection_permission(
+    GUACAMOLE_SERVER_URL,
+    GUACAMOLE_SERVER_API_TOKEN,
+    dataSource,
+    user_name,
+    connectionGroupId,
+):
+    """
+    Give the user permissions to access the VM in the Guacamole server.
+    """
+    try:
+        response = requests.patch(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/users/{user_name}/permissions", headers={
+            "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}",
+            "Content-Type": "application/json"
+        }, json=[
+            {
+                "op": "add",
+                "path": f"/connectionPermissions/{connectionGroupId}",
+                "value": "READ"
+            }
+        ])
+
+        response.raise_for_status()
+
+    except requests.exceptions.RequestException as err:
+        logger.error(f"Request failed: {traceback.format_exc()}")
+        raise
+
 def get_connections(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, dataSource):
     """
     Get the connections from the Guacamole server.
