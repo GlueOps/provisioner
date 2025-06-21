@@ -88,7 +88,7 @@ def create_connection_group(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, da
     create the connection groups for the Guacamole connection.
     """
     try:
-        response = requests.get(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/connectionGroups", headers={
+        response = requests.post(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/connectionGroups", headers={
             "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}"
         }, json={
             "parentIdentifier": "ROOT",
@@ -107,7 +107,7 @@ def create_connection_user(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, dat
     create the connection user for the Guacamole connection.
     """
     try:
-        response = requests.get(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/users", headers={
+        response = requests.post(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/users", headers={
             "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}"
         }, json={
             "username": user_name,
