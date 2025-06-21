@@ -39,7 +39,13 @@ def get_connection_groups(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, data
         logger.error(f"Request failed: {traceback.format_exc()}")
         raise
 
-def find_group_id_by_name(groups_data, user_name):
+def find_group_id_by_name(
+    groups_data,
+    user_name,
+    GUACAMOLE_SERVER_URL,
+    GUACAMOLE_SERVER_API_TOKEN,
+    dataSource
+):
     """
     Parses the connection groups dictionary to find the ID of a group with a specific name.
 
@@ -53,7 +59,99 @@ def find_group_id_by_name(groups_data, user_name):
     for group_details in groups_data.values():
         if group_details.get('name') == user_name:
             return group_details.get('identifier')
-    return 'ROOT'
+    
+    identifier = create_connection_group(
+        GUACAMOLE_SERVER_URL,
+        GUACAMOLE_SERVER_API_TOKEN,
+        dataSource,
+        user_name
+    )
+
+    create_connection_user(
+        GUACAMOLE_SERVER_URL,
+        GUACAMOLE_SERVER_API_TOKEN,
+        dataSource,
+        user_name
+    )
+
+    grant_connection_group_permission(
+        GUACAMOLE_SERVER_URL,
+        GUACAMOLE_SERVER_API_TOKEN,
+        dataSource,
+        user_name,
+        identifier
+    )
+    return identifier
+
+def create_connection_group(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, dataSource, user_name):
+    """
+    create the connection groups for the Guacamole connection.
+    """
+    try:
+        response = requests.get(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/connectionGroups", headers={
+            "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}"
+        }, json={
+            "parentIdentifier": "ROOT",
+            "name": user_name,
+            "attributes": {}
+        })
+        response.raise_for_status()
+        return response.json().get("identifier")
+
+    except requests.exceptions.RequestException as err:
+        logger.error(f"Request failed: {traceback.format_exc()}")
+        raise
+
+def create_connection_user(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_API_TOKEN, dataSource, user_name):
+    """
+    create the connection user for the Guacamole connection.
+    """
+    try:
+        response = requests.get(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/users", headers={
+            "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}"
+        }, json={
+            "username": user_name,
+            "attributes": {
+                "disabled": False,
+                "expired": False,
+                "accessWindowStart": 0,
+                "accessWindowEnd": 0
+            }
+        })
+        response.raise_for_status()
+        return response.json().get("identifier")
+
+    except requests.exceptions.RequestException as err:
+        logger.error(f"Request failed: {traceback.format_exc()}")
+        raise
+
+def grant_connection_group_permission(
+    GUACAMOLE_SERVER_URL,
+    GUACAMOLE_SERVER_API_TOKEN,
+    dataSource,
+    user_name,
+    connectionGroupId,
+):
+    """
+    Give the user permissions to access the VM group in the Guacamole server.
+    """
+    try:
+        response = requests.patch(f"{GUACAMOLE_SERVER_URL}/api/session/data/{dataSource}/users/{user_name}/permissions", headers={
+            "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}",
+            "Content-Type": "application/json"
+        }, json=[
+            {
+                "op": "add",
+                "path": f"/connectionGroupPermissions/{connectionGroupId}",
+                "value": "READ"
+            }
+        ])
+
+        response.raise_for_status()
+
+    except requests.exceptions.RequestException as err:
+        logger.error(f"Request failed: {traceback.format_exc()}")
+        raise
 
 def grant_connection_permission(
     GUACAMOLE_SERVER_URL,
