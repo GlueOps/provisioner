@@ -239,7 +239,7 @@ def create_vm(
                 "port": server_port,
                 "username": server_user,
                 "private-key": server_private_key,
-                "command": f"ssh root@{vm_name}"
+                "command": f"tailscale ssh root@{vm_name}"
             },
             "attributes":{}
         })
