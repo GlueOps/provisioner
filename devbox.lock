@@ -170,67 +170,51 @@
         }
       }
     },
-    "virt-manager@4.1.0": {
-      "last_modified": "2024-11-16T04:25:12Z",
-      "resolved": "github:NixOS/nixpkgs/34a626458d686f1b58139620a8b2793e9e123bba#virt-manager",
+    "virt-manager@5.0.0": {
+      "last_modified": "2025-06-17T01:11:27Z",
+      "resolved": "github:NixOS/nixpkgs/c539ae8d21e49776966d714f82fba33b1fca78bc#virt-manager",
       "source": "devbox-search",
-      "version": "4.1.0",
+      "version": "5.0.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/bq7s4gb2yjnv4af3vd0sh4cnycgmw7a5-virt-manager-4.1.0",
+              "path": "/nix/store/6nvid2gjmcfcc3nn41y4y97rj7pjrxcl-virt-manager-5.0.0",
               "default": true
-            },
-            {
-              "name": "dist",
-              "path": "/nix/store/daaglh73xf2maxgy5x3972x9kmdv8syb-virt-manager-4.1.0-dist"
             }
           ],
-          "store_path": "/nix/store/bq7s4gb2yjnv4af3vd0sh4cnycgmw7a5-virt-manager-4.1.0"
+          "store_path": "/nix/store/6nvid2gjmcfcc3nn41y4y97rj7pjrxcl-virt-manager-5.0.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/bpbkxnd6gzkd4l69pg7rwl5f3rz5j1f9-virt-manager-4.1.0",
+              "path": "/nix/store/xg3dx0hhli74qq8k68xp0ljyybw09xl6-virt-manager-5.0.0",
               "default": true
-            },
-            {
-              "name": "dist",
-              "path": "/nix/store/8jxh79kkm091gkwyrx7dqhdnw2j3k8nj-virt-manager-4.1.0-dist"
             }
           ],
-          "store_path": "/nix/store/bpbkxnd6gzkd4l69pg7rwl5f3rz5j1f9-virt-manager-4.1.0"
+          "store_path": "/nix/store/xg3dx0hhli74qq8k68xp0ljyybw09xl6-virt-manager-5.0.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/qd1kwasg8q7y2p574s57bwh0mqcm1wng-virt-manager-4.1.0",
+              "path": "/nix/store/m0l4s57jk7kc3b9dydj9791rbq6sabwj-virt-manager-5.0.0",
               "default": true
-            },
-            {
-              "name": "dist",
-              "path": "/nix/store/5mlvdx3q7l65xzhx7qynhzpkvjl0x3c5-virt-manager-4.1.0-dist"
             }
           ],
-          "store_path": "/nix/store/qd1kwasg8q7y2p574s57bwh0mqcm1wng-virt-manager-4.1.0"
+          "store_path": "/nix/store/m0l4s57jk7kc3b9dydj9791rbq6sabwj-virt-manager-5.0.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/6df7l0303snkyx4306aasgzk8cp1zhsr-virt-manager-4.1.0",
+              "path": "/nix/store/la0vsxxsbb1196a1lpzwyj846hz61gnp-virt-manager-5.0.0",
               "default": true
-            },
-            {
-              "name": "dist",
-              "path": "/nix/store/vgpgr0pl9z4767a4m0xx8vmjx1f48bvr-virt-manager-4.1.0-dist"
             }
           ],
-          "store_path": "/nix/store/6df7l0303snkyx4306aasgzk8cp1zhsr-virt-manager-4.1.0"
+          "store_path": "/nix/store/la0vsxxsbb1196a1lpzwyj846hz61gnp-virt-manager-5.0.0"
         }
       }
     }
