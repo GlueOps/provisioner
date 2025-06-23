@@ -3,7 +3,7 @@
   "packages": [
     "python-full@3.11.10",
     "pipenv@2024.2.0",
-    "libvirt@9.0.0",
+    "libvirt@9.5.0",
     "virt-manager@4.1.0"
   ],
   "shell": {
