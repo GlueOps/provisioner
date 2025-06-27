@@ -5,7 +5,7 @@ from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole, tailscale
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
-from schemas.schemas import ExistingVm, Vm, VmMeta, Message
+from schemas.schemas import ExistingVm, Vm, VmMeta, Message, VmImport
 
 
 
