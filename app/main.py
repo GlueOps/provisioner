@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
-from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole
+from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole, tailscale
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message
 
@@ -25,6 +25,8 @@ try:
     BASTION_SERVER_PORT = int(os.environ['BASTION_SERVER_PORT'])
     BASTION_SERVER_USER = os.environ['BASTION_SERVER_USER']
     BASTION_SERVER_KEY = os.environ['BASTION_SERVER_KEY']
+    TAILSCALE_TAILNET_NAME = os.environ['TAILSCALE_TAILNET_NAME']
+    TAILSCALE_API_TOKEN = os.environ['TAILSCALE_API_TOKEN']
 except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
@@ -212,6 +214,18 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
                 data_source,
                 connection_id
             )
+
+        # Remove the VM from Tailscale if it exists
+        tailscale_devices = tailscale.get_devices(
+            server_name=vm.vm_name,
+            tailscale_tailnet_name=TAILSCALE_TAILNET_NAME,
+            tailscale_api_token=TAILSCALE_API_TOKEN
+        )
+        if tailscale_devices['device_id']:
+            logger.info(f"Removing Tailscale device: {tailscale_devices['device_id']}")
+            await tailscale.remove_device(TAILSCALE_API_TOKEN, tailscale_devices['device_id'])
+        else:
+            logger.warning(f"No Tailscale device found for VM: {vm.vm_name}")
 
     except Exception as e:
         pass
