@@ -236,7 +236,10 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     try:
         virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
-
+    except Exception as e:
+        logger.error(f"Failed to stop VM {vm.vm_name}: {e}")
+    
+    try:
         guacamole_token, data_source = guacamole.get_data(
             GUACAMOLE_SERVER_URL,
             GUACAMOLE_SERVER_USERNAME,
@@ -267,10 +270,12 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
         else:
             logger.warning(f"No Tailscale device found for VM: {vm.vm_name}")
 
-    except Exception as e:
-        pass
-    finally:
         virsh.undefine_vm(cfg.connect_uri, vm.vm_name, remove_all_storage=True)
+
+    except Exception as e:
+        logger.error(f"Failed to delete VM {vm.vm_name}: {e}")
+        raise
+        
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 @app.get("/health")
