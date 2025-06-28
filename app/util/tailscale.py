@@ -27,9 +27,9 @@ def get_devices(server_name = None, tailscale_tailnet_name = None, tailscale_api
     # return an object containing all the info
     return { "devices": response.json().get("devices", []), "device_id": device_id, "device_ip": device_ip }
 
-async def remove_device(tailscale_api_token, device_id):
+def remove_device(tailscale_api_token, device_id):
     try:
-        response = await requests.delete(f'https://api.tailscale.com/api/v2/device/{device_id}',
+        response = requests.delete(f'https://api.tailscale.com/api/v2/device/{device_id}',
             headers={
             'Authorization': f'Bearer {tailscale_api_token}'
         })
