@@ -34,6 +34,7 @@ def remove_device(tailscale_api_token, device_id):
             'Authorization': f'Bearer {tailscale_api_token}'
         })
         response.raise_for_status()
+        logger.info(f"Removed Tailscale device: {device_id}")
     except requests.exceptions.RequestException as err:
         logger.error(f"Request failed: {traceback.format_exc()}")
         raise

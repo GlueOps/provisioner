@@ -265,7 +265,6 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
             tailscale_api_token=TAILSCALE_API_TOKEN
         )
         if tailscale_devices['device_id']:
-            logger.info(f"Removing Tailscale device: {tailscale_devices['device_id']}")
             tailscale.remove_device(TAILSCALE_API_TOKEN, tailscale_devices['device_id'])
         else:
             logger.warning(f"No Tailscale device found for VM: {vm.vm_name}")
