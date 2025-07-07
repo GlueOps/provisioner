@@ -3,9 +3,9 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
-from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole
+from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole, tailscale
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
-from schemas.schemas import ExistingVm, Vm, VmMeta, Message
+from schemas.schemas import ExistingVm, Vm, VmMeta, Message, VmImport
 
 
 
@@ -15,7 +15,6 @@ logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 BAREMETAL_SERVER_CONFIGS = os.getenv('BAREMETAL_SERVER_CONFIGS', '[]')
 REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
 try:
-    PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
     API_TOKEN = os.environ['API_TOKEN']
     DOWNLOAD_SERVER_URL = os.environ['DOWNLOAD_SERVER_URL']
     GUACAMOLE_SERVER_URL = os.environ['GUACAMOLE_SERVER_URL']
@@ -25,6 +24,8 @@ try:
     BASTION_SERVER_PORT = int(os.environ['BASTION_SERVER_PORT'])
     BASTION_SERVER_USER = os.environ['BASTION_SERVER_USER']
     BASTION_SERVER_KEY = os.environ['BASTION_SERVER_KEY']
+    TAILSCALE_TAILNET_NAME = os.environ['TAILSCALE_TAILNET_NAME']
+    TAILSCALE_API_TOKEN = os.environ['TAILSCALE_API_TOKEN']
 except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
@@ -145,6 +146,46 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
     logger.info(vm.tags)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
+@app.post("/v1/import-vm", response_model=Message)
+async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
+    logger.info(vm)
+    try:
+        guacamole_token, data_source = guacamole.get_data(
+            GUACAMOLE_SERVER_URL,
+            GUACAMOLE_SERVER_USERNAME,
+            GUACAMOLE_SERVER_PASSWORD
+        )
+
+        connection_groups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
+        owner = vm.tags.get('owner')
+        connection_group_id = guacamole.find_group_id_by_name(connection_groups, owner, GUACAMOLE_SERVER_URL, guacamole_token, data_source)
+        vm_id = guacamole.create_vm(
+            GUACAMOLE_SERVER_URL,
+            guacamole_token,
+            data_source,
+            connection_group_id,
+            vm.vm_name,
+            BASTION_SERVER_IP,
+            BASTION_SERVER_PORT,
+            BASTION_SERVER_USER,
+            BASTION_SERVER_KEY
+        )
+        if owner:
+            guacamole.grant_connection_permission(
+                GUACAMOLE_SERVER_URL,
+                guacamole_token,
+                data_source,
+                owner,
+                vm_id
+            )
+
+    except Exception as e:
+        logger.error(f"vm import failed: {e.stderr}")
+        raise
+
+    logger.info(vm.tags)
+    return JSONResponse(status_code=200, content={"message": "Success"})
+
 @app.get("/v1/regions", response_model=List[regions.SSHConfig])
 async def list_regions(api_key: str = Depends(get_api_key)):
     region_configs = regions.get_enabled_regions_only(REGIONS)
@@ -194,7 +235,10 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     try:
         virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
-
+    except Exception as e:
+        logger.error(f"Failed to stop VM {vm.vm_name}: {e}")
+    
+    try:
         guacamole_token, data_source = guacamole.get_data(
             GUACAMOLE_SERVER_URL,
             GUACAMOLE_SERVER_USERNAME,
@@ -213,10 +257,23 @@ async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
                 connection_id
             )
 
-    except Exception as e:
-        pass
-    finally:
+        # Remove the VM from Tailscale if it exists
+        tailscale_devices = tailscale.get_devices(
+            server_name=vm.vm_name,
+            tailscale_tailnet_name=TAILSCALE_TAILNET_NAME,
+            tailscale_api_token=TAILSCALE_API_TOKEN
+        )
+        if tailscale_devices['device_id']:
+            tailscale.remove_device(TAILSCALE_API_TOKEN, tailscale_devices['device_id'])
+        else:
+            logger.warning(f"No Tailscale device found for VM: {vm.vm_name}")
+
         virsh.undefine_vm(cfg.connect_uri, vm.vm_name, remove_all_storage=True)
+
+    except Exception as e:
+        logger.error(f"Failed to delete VM {vm.vm_name}: {e}")
+        raise
+        
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 @app.get("/health")

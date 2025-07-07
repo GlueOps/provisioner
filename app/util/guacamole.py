@@ -264,6 +264,7 @@ def delete_vm(
             "guacamole-token": f"{GUACAMOLE_SERVER_API_TOKEN}"
         })
         response.raise_for_status()
+        logger.info(f"Deleted Guacamole connection: {connection_id}")
 
     except requests.exceptions.RequestException as err:
         logger.error(f"Request failed: {traceback.format_exc()}")
