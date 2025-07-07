@@ -15,7 +15,6 @@ logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 BAREMETAL_SERVER_CONFIGS = os.getenv('BAREMETAL_SERVER_CONFIGS', '[]')
 REGIONS = regions.get_region_configs(BAREMETAL_SERVER_CONFIGS)
 try:
-    PROVISIONER_ENVIRONMENT = os.environ['PROVISIONER_ENVIRONMENT']
     API_TOKEN = os.environ['API_TOKEN']
     DOWNLOAD_SERVER_URL = os.environ['DOWNLOAD_SERVER_URL']
     GUACAMOLE_SERVER_URL = os.environ['GUACAMOLE_SERVER_URL']
