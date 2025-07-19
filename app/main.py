@@ -157,9 +157,14 @@ async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
             GUACAMOLE_SERVER_PASSWORD
         )
 
+        logger.info(f"guacamole get data success")
+
         connection_groups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
+        logger.info(f"guacamole get connection groups success")
         owner = vm.tags.get('owner')
+        logger.info(f"owner: {owner}")
         connection_group_id = guacamole.find_group_id_by_name(connection_groups, owner, GUACAMOLE_SERVER_URL, guacamole_token, data_source)
+        logger.info(f"guacamole find group id by name success: {connection_group_id}")
         vm_id = guacamole.create_vm(
             GUACAMOLE_SERVER_URL,
             guacamole_token,
@@ -171,6 +176,7 @@ async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
             BASTION_SERVER_USER,
             BASTION_SERVER_KEY
         )
+        logger.info(f"guacamole create vm success: {vm_id}")
         if owner:
             guacamole.grant_connection_permission(
                 GUACAMOLE_SERVER_URL,
@@ -179,9 +185,14 @@ async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
                 owner,
                 vm_id
             )
+        logger.info(f"guacamole grant connection permission success")
+
+        command = f"virsh desc {vm.vm_name} --new-desc '{b64.encode_string(json.dumps(vm.tags))}'"
+        cfg = regions.get_server_config(vm.region_name, REGIONS)
+        ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
     except Exception as e:
-        logger.error(f"vm import failed: {e.stderr}")
+        logger.error(f"vm import failed: {str(e)}")
         raise
 
     logger.info(vm.tags)
