@@ -16,11 +16,6 @@ class Vm(BaseModel):
     region_name: str = Field(...,example = 'andromeda')
     instance_type: str = Field(...,example = 'basic')
 
-class VmImport(BaseModel):
-    vm_name: str = Field(...,example = 'dinosaur-cat')
-    region_name: str = Field(...,example = 'andromeda')
-    tags: dict = Field(...,example = {"owner": "john.doe@example.com"})
-
 class VmMeta(BaseModel):
     vm_name: str = Field(...,example = 'dinosaur-cat')
     region_name: str = Field(...,example = 'andromeda')
