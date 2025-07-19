@@ -180,7 +180,7 @@ async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
                 vm_id
             )
 
-        command = f'virsh desc {vm.vm_name} --config --new-desc "{b64.encode_string(json.dumps(vm.tags))}"'
+        command = f"virsh desc {vm.vm_name} --config --new-desc '{b64.encode_string(json.dumps(vm.tags))}'"
         cfg = regions.get_server_config(vm.region_name, REGIONS)
         ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
