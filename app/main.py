@@ -193,7 +193,7 @@ async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
         # ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
     except Exception as e:
-        logger.error(f"vm import failed: {e.stderr}")
+            logger.error(f"vm import failed: {str(e)}")
         raise
 
     logger.info(vm.tags)
