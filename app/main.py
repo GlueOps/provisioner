@@ -187,10 +187,9 @@ async def import_vm(vm: VmImport, api_key: str = Depends(get_api_key)):
             )
         logger.info(f"guacamole grant connection permission success")
 
-        # description = b64.encode_string(json.dumps(vm.tags))
-        # command = f"virsh desc {vm.vm_name} --config --new-desc '{b64.encode_string(json.dumps(vm.tags))}'"
-        # cfg = regions.get_server_config(vm.region_name, REGIONS)
-        # ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
+        command = f"virsh desc {vm.vm_name} --config --new-desc '{b64.encode_string(json.dumps(vm.tags))}'"
+        cfg = regions.get_server_config(vm.region_name, REGIONS)
+        ssh.execute_ssh_command(cfg.host, cfg.user, cfg.port, command)
 
     except Exception as e:
         logger.error(f"vm import failed: {str(e)}")
