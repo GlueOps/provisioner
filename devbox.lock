@@ -49,67 +49,67 @@
         }
       }
     },
-    "pipenv@2025.0.3": {
-      "last_modified": "2025-06-05T08:10:37Z",
-      "resolved": "github:NixOS/nixpkgs/ec62ae342c340d24289735e31eb9155261cd5fe7#pipenv",
+    "pipenv@2025.0.4": {
+      "last_modified": "2025-08-04T20:54:38Z",
+      "resolved": "github:NixOS/nixpkgs/cab778239e705082fe97bb4990e0d24c50924c04#pipenv",
       "source": "devbox-search",
-      "version": "2025.0.3",
+      "version": "2025.0.4",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/bav71xh9n3akx6adq9gyvq4l71n0d663-pipenv-2025.0.3",
+              "path": "/nix/store/8wckw1jk2ra609v2acxifz238l4isray-pipenv-2025.0.4",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/zr5kijny7yxpl5fjygyi00adk6qxzhab-pipenv-2025.0.3-dist"
+              "path": "/nix/store/l2ydsgm7fafjb8p94mfxavqpaflbri52-pipenv-2025.0.4-dist"
             }
           ],
-          "store_path": "/nix/store/bav71xh9n3akx6adq9gyvq4l71n0d663-pipenv-2025.0.3"
+          "store_path": "/nix/store/8wckw1jk2ra609v2acxifz238l4isray-pipenv-2025.0.4"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/1pzd8260s3n0g42q5rzd2gbxjv0zsxmh-pipenv-2025.0.3",
+              "path": "/nix/store/9xjbkv3cwfqgq6cf97nj87ncc6kj9nbx-pipenv-2025.0.4",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/1v59g2fzzncyyav1d2pvnf0pwg5ggzi2-pipenv-2025.0.3-dist"
+              "path": "/nix/store/wsd5z7a18rkb2iqdz447fj1k5jlzyhyg-pipenv-2025.0.4-dist"
             }
           ],
-          "store_path": "/nix/store/1pzd8260s3n0g42q5rzd2gbxjv0zsxmh-pipenv-2025.0.3"
+          "store_path": "/nix/store/9xjbkv3cwfqgq6cf97nj87ncc6kj9nbx-pipenv-2025.0.4"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/41pcvq90c6akdgrkbfsn6zy3n7fbsykd-pipenv-2025.0.3",
+              "path": "/nix/store/cxfnmgkdc0nx88ffdw4ayz02yawwf0z1-pipenv-2025.0.4",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/y802ghjbgvnx9b4nk29sr6sx6mabag2n-pipenv-2025.0.3-dist"
+              "path": "/nix/store/fq41gmsabzsfhhnl5bx7rj1k3vf9sxx1-pipenv-2025.0.4-dist"
             }
           ],
-          "store_path": "/nix/store/41pcvq90c6akdgrkbfsn6zy3n7fbsykd-pipenv-2025.0.3"
+          "store_path": "/nix/store/cxfnmgkdc0nx88ffdw4ayz02yawwf0z1-pipenv-2025.0.4"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/4diw5nxmp7vshc3bs9lijkrv80a3vhqs-pipenv-2025.0.3",
+              "path": "/nix/store/fkhhh5i1r5m6q8wbdny10lf2wkz4qa77-pipenv-2025.0.4",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/3sxdz5p2v3k2n25s67jvjncly1c9g42k-pipenv-2025.0.3-dist"
+              "path": "/nix/store/7x6aqkv64vq8zlpbk12zsvmi6lhf4f8d-pipenv-2025.0.4-dist"
             }
           ],
-          "store_path": "/nix/store/4diw5nxmp7vshc3bs9lijkrv80a3vhqs-pipenv-2025.0.3"
+          "store_path": "/nix/store/fkhhh5i1r5m6q8wbdny10lf2wkz4qa77-pipenv-2025.0.4"
         }
       }
     },
