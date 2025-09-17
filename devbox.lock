@@ -1,6 +1,10 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "github:NixOS/nixpkgs/nixpkgs-unstable": {
+      "last_modified": "2025-09-16T13:27:06Z",
+      "resolved": "github:NixOS/nixpkgs/08b8f92ac6354983f5382124fef6006cade4a1c1?lastModified=1758029226&narHash=sha256-TjqVmbpoCqWywY9xIZLTf6ANFvDCXdctCjoYuYPYdMI%3D"
+    },
     "libvirt@11.0.0": {
       "last_modified": "2025-06-17T01:11:27Z",
       "resolved": "github:NixOS/nixpkgs/c539ae8d21e49776966d714f82fba33b1fca78bc#libvirt",
@@ -50,8 +54,8 @@
       }
     },
     "pipenv@2025.0.3": {
-      "last_modified": "2025-06-05T08:10:37Z",
-      "resolved": "github:NixOS/nixpkgs/ec62ae342c340d24289735e31eb9155261cd5fe7#pipenv",
+      "last_modified": "2025-07-28T17:09:23Z",
+      "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#pipenv",
       "source": "devbox-search",
       "version": "2025.0.3",
       "systems": {
@@ -59,57 +63,57 @@
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/bav71xh9n3akx6adq9gyvq4l71n0d663-pipenv-2025.0.3",
+              "path": "/nix/store/nnw2dj145cnw2l4vf2mrd86iwcxs66d6-pipenv-2025.0.3",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/zr5kijny7yxpl5fjygyi00adk6qxzhab-pipenv-2025.0.3-dist"
+              "path": "/nix/store/m7ib04sx7cam3g6pn8d0ppydxkw40qbk-pipenv-2025.0.3-dist"
             }
           ],
-          "store_path": "/nix/store/bav71xh9n3akx6adq9gyvq4l71n0d663-pipenv-2025.0.3"
+          "store_path": "/nix/store/nnw2dj145cnw2l4vf2mrd86iwcxs66d6-pipenv-2025.0.3"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/1pzd8260s3n0g42q5rzd2gbxjv0zsxmh-pipenv-2025.0.3",
+              "path": "/nix/store/476i8n2xjqfwis5kidmplbkhj3qm2pcy-pipenv-2025.0.3",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/1v59g2fzzncyyav1d2pvnf0pwg5ggzi2-pipenv-2025.0.3-dist"
+              "path": "/nix/store/5svliy9gp4ng83hjd8jpv180cn0mxdx0-pipenv-2025.0.3-dist"
             }
           ],
-          "store_path": "/nix/store/1pzd8260s3n0g42q5rzd2gbxjv0zsxmh-pipenv-2025.0.3"
+          "store_path": "/nix/store/476i8n2xjqfwis5kidmplbkhj3qm2pcy-pipenv-2025.0.3"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/41pcvq90c6akdgrkbfsn6zy3n7fbsykd-pipenv-2025.0.3",
+              "path": "/nix/store/4m1d1akp01sgrxqhfny2cc8az87fc0cn-pipenv-2025.0.3",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/y802ghjbgvnx9b4nk29sr6sx6mabag2n-pipenv-2025.0.3-dist"
+              "path": "/nix/store/zlalacax0vykvisf67098alf6grg3lyr-pipenv-2025.0.3-dist"
             }
           ],
-          "store_path": "/nix/store/41pcvq90c6akdgrkbfsn6zy3n7fbsykd-pipenv-2025.0.3"
+          "store_path": "/nix/store/4m1d1akp01sgrxqhfny2cc8az87fc0cn-pipenv-2025.0.3"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/4diw5nxmp7vshc3bs9lijkrv80a3vhqs-pipenv-2025.0.3",
+              "path": "/nix/store/a9y15ky03cinv1mpapqdplh1m246608d-pipenv-2025.0.3",
               "default": true
             },
             {
               "name": "dist",
-              "path": "/nix/store/3sxdz5p2v3k2n25s67jvjncly1c9g42k-pipenv-2025.0.3-dist"
+              "path": "/nix/store/zbch0jqa449gmdgncw8zamz76r1516bl-pipenv-2025.0.3-dist"
             }
           ],
-          "store_path": "/nix/store/4diw5nxmp7vshc3bs9lijkrv80a3vhqs-pipenv-2025.0.3"
+          "store_path": "/nix/store/a9y15ky03cinv1mpapqdplh1m246608d-pipenv-2025.0.3"
         }
       }
     },
@@ -171,8 +175,8 @@
       }
     },
     "virt-manager@5.0.0": {
-      "last_modified": "2025-06-17T01:11:27Z",
-      "resolved": "github:NixOS/nixpkgs/c539ae8d21e49776966d714f82fba33b1fca78bc#virt-manager",
+      "last_modified": "2025-08-12T09:17:37Z",
+      "resolved": "github:NixOS/nixpkgs/372d9eeeafa5b15913201e2b92e8e539ac7c64d1#virt-manager",
       "source": "devbox-search",
       "version": "5.0.0",
       "systems": {
@@ -180,41 +184,41 @@
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/6nvid2gjmcfcc3nn41y4y97rj7pjrxcl-virt-manager-5.0.0",
+              "path": "/nix/store/y59rs808spvvp25sph1r7mg6n6ifrsi4-virt-manager-5.0.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/6nvid2gjmcfcc3nn41y4y97rj7pjrxcl-virt-manager-5.0.0"
+          "store_path": "/nix/store/y59rs808spvvp25sph1r7mg6n6ifrsi4-virt-manager-5.0.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/xg3dx0hhli74qq8k68xp0ljyybw09xl6-virt-manager-5.0.0",
+              "path": "/nix/store/2ap3bqy7mi3qk0kxc2y45hc655qx742m-virt-manager-5.0.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/xg3dx0hhli74qq8k68xp0ljyybw09xl6-virt-manager-5.0.0"
+          "store_path": "/nix/store/2ap3bqy7mi3qk0kxc2y45hc655qx742m-virt-manager-5.0.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/m0l4s57jk7kc3b9dydj9791rbq6sabwj-virt-manager-5.0.0",
+              "path": "/nix/store/q89yz3fm1j12lvqpzycljvzric8vdf0l-virt-manager-5.0.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/m0l4s57jk7kc3b9dydj9791rbq6sabwj-virt-manager-5.0.0"
+          "store_path": "/nix/store/q89yz3fm1j12lvqpzycljvzric8vdf0l-virt-manager-5.0.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/la0vsxxsbb1196a1lpzwyj846hz61gnp-virt-manager-5.0.0",
+              "path": "/nix/store/ff1pf825ygcfjxipdcgcjaiip08qfxc5-virt-manager-5.0.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/la0vsxxsbb1196a1lpzwyj846hz61gnp-virt-manager-5.0.0"
+          "store_path": "/nix/store/ff1pf825ygcfjxipdcgcjaiip08qfxc5-virt-manager-5.0.0"
         }
       }
     }
