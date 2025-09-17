@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.6/.schema/devbox.schema.json",
   "packages": [
-    "python-full@3.13.3",
+    "python-full@3.13.5",
     "pipenv@2025.0.4",
     "libvirt@11.0.0",
     "virt-manager@5.0.0"
