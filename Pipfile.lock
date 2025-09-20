@@ -392,11 +392,11 @@
                 "standard"
             ],
             "hashes": [
-                "sha256:231a6af2fe21cfa2c32730170ad8514985fc250bec16c9b242d3b94c835ef529",
-                "sha256:c3a7a8fb830b05f7e087d920e0d786ca1fc9892eb4e9a84b227be4c1bc7569db"
+                "sha256:408c1b883f509f7e51b8fb00f179d64bcc6c457ef151dccbd178708b0d2bc623",
+                "sha256:bbb90b354acf2df866064ad3bffa55b18038592913d7f1c070069cecaceb1481"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==0.116.2"
+            "version": "==0.117.0"
         },
         "fastapi-cli": {
             "extras": [
