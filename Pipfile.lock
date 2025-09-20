@@ -1124,11 +1124,11 @@
         },
         "typer": {
             "hashes": [
-                "sha256:3c6abeb8f01b97b9be84b8dd134956b4c15a3eef0e11382c537dc083886f908f",
-                "sha256:f290580f52c60222574d4261fb26e316204558be4add913ee53e4680f16cd6d2"
+                "sha256:914b2b39a1da4bafca5f30637ca26fa622a5bf9f515e5fdc772439f306d5682a",
+                "sha256:cb881433a4b15dacc875bb0583d1a61e78497806741f9aba792abcab390c03e6"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==0.19.0"
+            "version": "==0.19.1"
         },
         "typing-extensions": {
             "hashes": [
