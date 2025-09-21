@@ -2,8 +2,8 @@
   "lockfile_version": "1",
   "packages": {
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2025-09-19T15:05:15Z",
-      "resolved": "github:NixOS/nixpkgs/90ade7da38aa49c2e2693a04a44662a0e61530e9?lastModified=1758294315&narHash=sha256-H%2BC4c%2BjKCZpSJHODHFaY6b2ciB3Hv00V5QKA7yUVtis%3D"
+      "last_modified": "2025-09-21T00:54:27Z",
+      "resolved": "github:NixOS/nixpkgs/51c8f9cfaae8306d135095bcdb3df9027f95542d?lastModified=1758416067&narHash=sha256-knH%2B3x9P5s5iscG0yBO3Zp6NlG2wao9C7emmtnZcQC4%3D"
     },
     "libvirt@11.5.0": {
       "last_modified": "2025-08-12T09:17:37Z",
