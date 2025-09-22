@@ -191,6 +191,12 @@ async def stop_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
     virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
+@app.post("/v1/edit-description", response_model=Message)
+async def edit_vm_description(vm: VmDescription, api_key: str = Depends(get_api_key)):
+    cfg = regions.get_server_config(vm.region_name, REGIONS)
+    virsh.edit_vm_description(cfg.connect_uri, vm.vm_name, vm.description)
+    return JSONResponse(status_code=200, content={"message": "Success"})
+
 @app.delete("/v1/delete", response_model=Message)
 async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
     cfg = regions.get_server_config(vm.region_name, REGIONS)

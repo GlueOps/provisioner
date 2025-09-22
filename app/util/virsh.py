@@ -42,6 +42,17 @@ def start_vm(connect, vm_name):
         logger.error(traceback.format_exc())
         raise
 
+def edit_vm_description(connect, vm_name, description):
+    """edit a virtual machine's description."""
+    cmd = ["virsh", "--connect", connect, "desc", vm_name, "--config", "--live", "--new-desc", description]
+    try:
+        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+        logger.info(f"VM '{vm_name}' description updated successfully. {result.stdout}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error updating VM '{vm_name}' description: {e.stderr}")
+        logger.error(traceback.format_exc())
+        raise
+
 def list_vms(region_config):
     """List virtual machines."""
     bash_get_all_vms_script = f"""

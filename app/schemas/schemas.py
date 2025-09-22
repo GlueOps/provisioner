@@ -22,3 +22,8 @@ class VmMeta(BaseModel):
 
 class Message(BaseModel):
     message: str = Field(...,example = 'Success')
+
+class VmDescription(BaseModel):
+    vm_name: str = Field(...,example = 'dinosaur-cat')
+    region_name: str = Field(...,example = 'andromeda')
+    description: str = Field(...,example = 'This is my new VM description')
