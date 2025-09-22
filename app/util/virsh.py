@@ -44,7 +44,21 @@ def start_vm(connect, vm_name):
 
 def edit_vm_description(connect, vm_name, description):
     """edit a virtual machine's description."""
-    cmd = ["virsh", "--connect", connect, "desc", vm_name, "--config", "--live", "--new-desc", b64.encode_string(json.dumps(description))]
+    # Check if VM is running
+    is_running = False
+    try:
+        check_cmd = ["virsh", "--connect", connect, "domstate", vm_name]
+        result = subprocess.run(check_cmd, check=True, text=True, capture_output=True)
+        is_running = "running" in result.stdout.lower()
+    except subprocess.CalledProcessError:
+        logger.warning(f"Could not determine state of VM '{vm_name}', assuming not running")
+    
+    # Use --live flag only if VM is running
+    flags = ["--config"]
+    if is_running:
+        flags.append("--live")
+        
+    cmd = ["virsh", "--connect", connect, "desc", vm_name] + flags + ["--new-desc", b64.encode_string(json.dumps(description))]
     try:
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
         logger.info(f"VM '{vm_name}' description updated successfully. {result.stdout}")
