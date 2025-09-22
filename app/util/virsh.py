@@ -44,7 +44,7 @@ def start_vm(connect, vm_name):
 
 def edit_vm_description(connect, vm_name, description):
     """edit a virtual machine's description."""
-    cmd = ["virsh", "--connect", connect, "desc", vm_name, "--config", "--live", "--new-desc", description]
+    cmd = ["virsh", "--connect", connect, "desc", vm_name, "--config", "--live", "--new-desc", b64.encode_string(json.dumps(description))]
     try:
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
         logger.info(f"VM '{vm_name}' description updated successfully. {result.stdout}")
