@@ -29,6 +29,7 @@
                 "sha256:3f3fae35c96039744587aa5b8371e7e8e603c0702999535961dd336026973ba6",
                 "sha256:60e474ac86736bbfd6f210f7a61218939c318f43f9972497381f1c5e930ed3d1"
             ],
+            "markers": "python_version >= '3.9'",
             "version": "==4.10.0"
         },
         "bcrypt": {
