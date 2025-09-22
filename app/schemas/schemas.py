@@ -26,4 +26,4 @@ class Message(BaseModel):
 class VmDescription(BaseModel):
     vm_name: str = Field(...,example = 'dinosaur-cat')
     region_name: str = Field(...,example = 'andromeda')
-    description: str = Field(...,example = 'This is my new VM description')
+    description: dict = Field(...,example = {"owner": "john.doe@example.com", "description": "New vm description"})
