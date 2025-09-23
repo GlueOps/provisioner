@@ -5,7 +5,7 @@ from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole, tailscale
 import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
-from schemas.schemas import ExistingVm, Vm, VmMeta, Message
+from schemas.schemas import ExistingVm, Vm, VmMeta, Message, VmTags
 
 
 
@@ -189,6 +189,12 @@ async def start_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
 async def stop_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
     cfg = regions.get_server_config(vm.region_name, REGIONS)
     virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
+    return JSONResponse(status_code=200, content={"message": "Success"})
+
+@app.post("/v1/edit-tags", response_model=Message)
+async def edit_vm_tags(vm: VmTags, api_key: str = Depends(get_api_key)):
+    cfg = regions.get_server_config(vm.region_name, REGIONS)
+    virsh.edit_vm_tags(cfg.connect_uri, vm.vm_name, vm.tags)
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 @app.delete("/v1/delete", response_model=Message)

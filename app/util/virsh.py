@@ -42,6 +42,31 @@ def start_vm(connect, vm_name):
         logger.error(traceback.format_exc())
         raise
 
+def edit_vm_tags(connect, vm_name, tags):
+    """edit a virtual machine's tags."""
+    # Check if VM is running
+    is_running = False
+    try:
+        check_cmd = ["virsh", "--connect", connect, "domstate", vm_name]
+        result = subprocess.run(check_cmd, check=True, text=True, capture_output=True)
+        is_running = "running" in result.stdout.lower()
+    except subprocess.CalledProcessError:
+        logger.warning(f"Could not determine state of VM '{vm_name}', assuming not running")
+    
+    # Use --live flag only if VM is running
+    flags = ["--config"]
+    if is_running:
+        flags.append("--live")
+        
+    cmd = ["virsh", "--connect", connect, "desc", vm_name] + flags + ["--new-desc", b64.encode_string(json.dumps(tags))]
+    try:
+        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+        logger.info(f"VM '{vm_name}' tags updated successfully. {result.stdout}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error updating VM '{vm_name}' tags: {e.stderr}")
+        logger.error(traceback.format_exc())
+        raise
+
 def list_vms(region_config):
     """List virtual machines."""
     bash_get_all_vms_script = f"""

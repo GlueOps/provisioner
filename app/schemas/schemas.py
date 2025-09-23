@@ -22,3 +22,8 @@ class VmMeta(BaseModel):
 
 class Message(BaseModel):
     message: str = Field(...,example = 'Success')
+
+class VmTags(BaseModel):
+    vm_name: str = Field(...,example = 'dinosaur-cat')
+    region_name: str = Field(...,example = 'andromeda')
+    tags: dict = Field(...,example = {"owner": "john.doe@example.com", "description": "New vm description"})
