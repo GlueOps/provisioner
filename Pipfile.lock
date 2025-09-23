@@ -1159,11 +1159,11 @@
                 "standard"
             ],
             "hashes": [
-                "sha256:048e68f2a0fe291cd848ed076f18c026e1b0bc69991495f087634ac9a41e8706",
-                "sha256:059086ecb470a021553f17bf860fce2095611d92fb8b669c44325b3435a0a654"
+                "sha256:4115c8add6d3fd536c8ee77f0e14a7fd2ebba939fed9b02583a97f80648f9e13",
+                "sha256:913b2b88672343739927ce381ff9e2ad62541f9f8289664fa1d1d3803fa2ce6c"
             ],
             "markers": "python_version >= '3.9'",
-            "version": "==0.36.1"
+            "version": "==0.37.0"
         },
         "uvloop": {
             "hashes": [
