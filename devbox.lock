@@ -174,51 +174,51 @@
         }
       }
     },
-    "virt-manager@5.0.0": {
-      "last_modified": "2025-08-12T09:17:37Z",
-      "resolved": "github:NixOS/nixpkgs/372d9eeeafa5b15913201e2b92e8e539ac7c64d1#virt-manager",
+    "virt-manager@5.1.0": {
+      "last_modified": "2025-09-21T09:21:16Z",
+      "resolved": "github:NixOS/nixpkgs/a1f79a1770d05af18111fbbe2a3ab2c42c0f6cd0#virt-manager",
       "source": "devbox-search",
-      "version": "5.0.0",
+      "version": "5.1.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/y59rs808spvvp25sph1r7mg6n6ifrsi4-virt-manager-5.0.0",
+              "path": "/nix/store/q0m8ximdgc5d8z311lmbrvrm76wi38dd-virt-manager-5.1.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/y59rs808spvvp25sph1r7mg6n6ifrsi4-virt-manager-5.0.0"
+          "store_path": "/nix/store/q0m8ximdgc5d8z311lmbrvrm76wi38dd-virt-manager-5.1.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/2ap3bqy7mi3qk0kxc2y45hc655qx742m-virt-manager-5.0.0",
+              "path": "/nix/store/z08s74lsv1yxj4m871x4s408lcbz3l4m-virt-manager-5.1.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/2ap3bqy7mi3qk0kxc2y45hc655qx742m-virt-manager-5.0.0"
+          "store_path": "/nix/store/z08s74lsv1yxj4m871x4s408lcbz3l4m-virt-manager-5.1.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/q89yz3fm1j12lvqpzycljvzric8vdf0l-virt-manager-5.0.0",
+              "path": "/nix/store/b8gxmmkzlpdrixm981jzhl30wz49cfi4-virt-manager-5.1.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/q89yz3fm1j12lvqpzycljvzric8vdf0l-virt-manager-5.0.0"
+          "store_path": "/nix/store/b8gxmmkzlpdrixm981jzhl30wz49cfi4-virt-manager-5.1.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/ff1pf825ygcfjxipdcgcjaiip08qfxc5-virt-manager-5.0.0",
+              "path": "/nix/store/6h0qanp7qa0v3ag37zfsbnj4b082ms4z-virt-manager-5.1.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/ff1pf825ygcfjxipdcgcjaiip08qfxc5-virt-manager-5.0.0"
+          "store_path": "/nix/store/6h0qanp7qa0v3ag37zfsbnj4b082ms4z-virt-manager-5.1.0"
         }
       }
     }
