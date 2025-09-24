@@ -20,13 +20,13 @@ def get_codespace_releases(environment):
             raise ValueError("No releases found")
         
         if environment == 'nonprod':
-            # Get the latest 5 releases (including prereleases)
-            latest_any = [release["tag_name"] for release in releases[:5]]
+            # Get the latest 60 releases (including prereleases)
+            latest_any = [release["tag_name"] for release in releases[:60]]
             return latest_any
 
         if environment == 'prod':
-            # Get the latest 5 stable releases (filter out prereleases)
-            stable_releases = [release["tag_name"] for release in releases if not release.get("prerelease")][:5]
+            # Get the latest 60 stable releases (filter out prereleases)
+            stable_releases = [release["tag_name"] for release in releases if not release.get("prerelease")][:60]
             return stable_releases
 
     except requests.exceptions.RequestException as err:
