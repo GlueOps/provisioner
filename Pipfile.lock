@@ -411,11 +411,11 @@
         },
         "fastapi-cloud-cli": {
             "hashes": [
-                "sha256:115d9b1f198b09ecc66f67156d183babb4fc14431414cc2e57a7649624782da6",
-                "sha256:8dc13f95246d80e625e2789a21760494e855d887f70caae109423d00064772d1"
+                "sha256:245447bfb17b01ae5f7bc15dec0833bce85381ecf34532e8fa4bcf279ad1c361",
+                "sha256:aa22a4b867bf53165b6551d2f4eb21b079bad4aa74047cb889acf941e34699d9"
             ],
             "markers": "python_version >= '3.8'",
-            "version": "==0.2.0"
+            "version": "==0.2.1"
         },
         "glueops-helpers": {
             "file": "https://github.com/GlueOps/python-glueops-helpers-library/archive/refs/tags/v0.6.0.zip"
