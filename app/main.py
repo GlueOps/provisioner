@@ -83,12 +83,24 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
 
     try:
         # Create a temporary file for user-data
-        with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".cloud-config") as temp_file:
-            temp_file.write(decoded_user_data)
-            temp_file.flush()
-            temp_file_path = temp_file.name
-        
-        logger.info(f"Temporary file created at {temp_file_path}")
+        meta_data = yaml.dump({
+            "instance-id": vm.vm_name,
+            "local-hostname": vm.vm_name,
+        })
+
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".user-cloud-config") as user_temp_file:
+            user_temp_file.write(decoded_user_data)
+            user_temp_file.flush()
+            user_temp_file_path = user_temp_file.name
+
+        logger.info(f"User-Data temporary file created at {user_temp_file_path}")
+
+        with tempfile.NamedTemporaryFile(delete=False, mode="w", suffix=".meta-cloud-config") as meta_temp_file:
+            meta_temp_file.write(meta_data)
+            meta_temp_file.flush()
+            meta_temp_file_path = meta_temp_file.name
+
+        logger.info(f"Meta-Data temporary file created at {meta_temp_file_path}")
 
         # Execute the virt-install command
         virt.create_virtual_machine(
@@ -102,7 +114,8 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             os_variant="linux2022",
             network_bridge="virbr0",
             network_model="virtio",
-            user_data=temp_file_path,
+            user_data=user_temp_file_path,
+            meta_data=meta_temp_file_path,
             import_option=True
         )
 
@@ -140,9 +153,13 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         raise
     finally:
         # Clean up the temporary file
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-            logger.info(f"Temporary file deleted: {temp_file_path}")
+        if os.path.exists(user_temp_file_path):
+            os.remove(user_temp_file_path)
+            logger.info(f"User Data temporary file deleted: {user_temp_file_path}")
+
+        if os.path.exists(meta_temp_file_path):
+            os.remove(meta_temp_file_path)
+            logger.info(f"Meta Data temporary file deleted: {meta_temp_file_path}")
 
     logger.info(vm.tags)
     return JSONResponse(status_code=200, content={"message": "Success"})

@@ -14,8 +14,9 @@ def create_virtual_machine(
     os_variant,
     network_bridge,
     network_model,
+    user_data,
+    meta_data,
     import_option,
-    user_data
 ):
     cmd = [
         "virt-install",
@@ -27,7 +28,7 @@ def create_virtual_machine(
         "--disk", f"path={disk_path},format={disk_format}",
         "--os-variant", os_variant,
         "--network", f"bridge={network_bridge},model={network_model}",
-        "--cloud-init", f"user-data={user_data}",
+        "--cloud-init", f"user-data={user_data},meta-data={meta_data}",
         "--noautoconsole",
     ]
     
