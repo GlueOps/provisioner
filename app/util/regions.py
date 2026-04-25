@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 from pydantic import BaseModel, Field, model_validator
 import os, glueops.setup_logging, json
 
@@ -17,6 +17,14 @@ class RegionBase(BaseModel):
     region_name: str
     enabled: bool
     available_instance_types: List[InstanceType]
+    total_vcpus: Optional[int] = None
+    total_memory_gb: Optional[int] = None
+    total_storage_gb: Optional[int] = None
+    free_vcpus: Optional[int] = None
+    free_memory_gb: Optional[int] = None
+    free_storage_gb: Optional[int] = None
+    cpu_pct: Optional[int] = None
+    ram_pct: Optional[int] = None
 
 
 class SSHConfig(RegionBase):

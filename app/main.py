@@ -103,8 +103,9 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         pass
 
     if proxmox_cfg is not None:
+        instance_type = vm.instance_type.removesuffix(proxmox._OVER_ALLOCATED)
         vm_specs = next(
-            (it for it in proxmox_cfg.available_instance_types if it.instance_type == vm.instance_type),
+            (it for it in proxmox_cfg.available_instance_types if it.instance_type == instance_type),
             None
         )
         if vm_specs is None:

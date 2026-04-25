@@ -28,8 +28,10 @@ def _decode_description(desc: str) -> dict:
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
 
-# Matches the capacity suffix appended to region names, e.g. "-40cpu-96gb-381gb"
-_CAPACITY_SUFFIX = re.compile(r'-\d+cpu-\d+gb-\d+gb$')
+# Kept for backwards compatibility — strips old capacity suffixes from region names
+# passed in by external clients. The provisioner itself no longer generates suffixed names.
+_CAPACITY_SUFFIX = re.compile(r' \(\d+ vCPU, \d+GB RAM, \d+GB Disk\)$')
+_OVER_ALLOCATED = " (Over Allocated)"
 
 
 def _client(cfg):
@@ -289,14 +291,35 @@ async def get_nodes_with_capacity(cfg) -> list:
         try:
             storage = await _get(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/status")
             free_storage_gb = int(storage.get("avail", 0) // (1024 ** 3))
+            total_storage_gb = int(storage.get("total", 0) // (1024 ** 3))
         except Exception:
             free_storage_gb = 0
+            total_storage_gb = 0
+        total_vcpus = int(n.get("maxcpu") or 0)
+        total_memory_gb = int((n.get("maxmem") or 0) // (1024 ** 3))
         free_vcpus = int(round(n["maxcpu"] * (1 - n.get("cpu", 0))))
         free_memory_gb = int((n["maxmem"] - n.get("mem", 0)) // (1024 ** 3))
+        cpu_pct = int(n.get("cpu", 0) * 100)
+        ram_pct = int(n.get("mem", 0) / n["maxmem"] * 100) if n.get("maxmem") else 0
+
+        def _instance_type_entry(it):
+            d = it.model_dump()
+            if it.vcpus > free_vcpus or it.memory_mb > free_memory_gb * 1024 or it.storage_mb > free_storage_gb * 1024:
+                d["instance_type"] += _OVER_ALLOCATED
+            return d
+
         results.append({
-            "region_name": f"{cfg.region_name}-{node}-{free_vcpus}cpu-{free_memory_gb}gb-{free_storage_gb}gb",
+            "region_name": f"{cfg.region_name}-{node}",
             "enabled": cfg.enabled,
-            "available_instance_types": [it.model_dump() for it in cfg.available_instance_types],
+            "available_instance_types": [_instance_type_entry(it) for it in cfg.available_instance_types],
+            "total_vcpus": total_vcpus,
+            "total_memory_gb": total_memory_gb,
+            "total_storage_gb": total_storage_gb,
+            "free_vcpus": free_vcpus,
+            "free_memory_gb": free_memory_gb,
+            "free_storage_gb": free_storage_gb,
+            "cpu_pct": cpu_pct,
+            "ram_pct": ram_pct,
         })
     return results
 

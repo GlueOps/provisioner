@@ -101,7 +101,7 @@ A JSON array of region config objects. Each entry is either a libvirt (`SSHConfi
 }
 ```
 
-Proxmox region names are dynamic — the API expands each node into a name like `proxmox-cluster-1-node-01-24cpu-48gb-200gb` reflecting live available capacity.
+Proxmox region names are stable strings of the form `{region_name}-{node}` — e.g. `proxmox-cluster-1-pve-node-01`. Each node entry in the `/v1/regions` response includes separate capacity and load fields: `total_vcpus`, `free_vcpus`, `total_memory_gb`, `free_memory_gb`, `total_storage_gb`, `free_storage_gb`, `cpu_pct`, `ram_pct`.
 
 ---
 

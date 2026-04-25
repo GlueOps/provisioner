@@ -2,6 +2,10 @@
 
 Operational reference for AI agents working in this repo. Read alongside CLAUDE.md (project overview, architecture, env vars).
 
+## Connected Repos
+
+- **[slackbot-developer-workspaces](https://github.com/GlueOps/slackbot-developer-workspaces)** — primary consumer of this API. See its [`.ai/AGENTS.md`](https://github.com/GlueOps/slackbot-developer-workspaces/blob/main/.ai/AGENTS.md) for how it consumes `/v1/regions`, handles the `(Over Allocated)` instance type suffix, and renders Proxmox capacity/load in Slack modals.
+
 ---
 
 ## Module Import Map
@@ -130,8 +134,8 @@ asyncio.run(main())
 | `wait_for_cloud_init` | `(cfg, node, vmid, agent_timeout=120, cloudinit_timeout=300)` | Two-phase poll: agent up → cloud-init done |
 | `find_vmid_by_name` | `(cfg, node, vm_name) -> str` | Resolve VM name to VMID |
 | `list_vms` | `(cfg) -> list` | All VMs in cluster with decoded tags |
-| `get_nodes_with_capacity` | `(cfg) -> list` | Per-node capacity as region name strings |
-| `parse_proxmox_region_name` | `(region_name, configs) -> (cfg, node)` | Strip capacity suffix, return stable config+node |
+| `get_nodes_with_capacity` | `(cfg) -> list` | Per-node capacity as list of dicts with `region_name`, capacity fields (`total_vcpus`, `total_memory_gb`, `total_storage_gb`, `free_vcpus`, `free_memory_gb`, `free_storage_gb`), and load fields (`cpu_pct`, `ram_pct`) |
+| `parse_proxmox_region_name` | `(region_name, configs) -> (cfg, node)` | Strip legacy capacity suffix if present, return stable config+node |
 | `edit_vm_tags` | `(cfg, node, vmid, tags)` | Update VM description with encoded tags |
 | `_agent_exec` | `(cfg, node, vmid, command: list[str]) -> str` | Run command in guest via qemu-guest-agent |
 
@@ -153,7 +157,7 @@ These are load-bearing. Do not change without understanding the impact.
 
 4. **VM metadata is base64-encoded JSON in the description field** — encode: `b64.encode_string(json.dumps(tags))`; decode: `json.loads(b64.decode_string(desc))`. Both libvirt and Proxmox backends use this format.
 
-5. **Proxmox region names include live capacity** — format: `{region_name}-{node}-{N}cpu-{N}gb-{N}gb`. Always call `parse_proxmox_region_name()` to recover stable `(cfg, node)` — never parse the string manually.
+5. **Proxmox region names are bare `{region_name}-{node}`** — e.g. `proxmox-cluster-1-pve-node-01`. Capacity and load are separate fields on the region object (`total_vcpus`, `free_vcpus`, `cpu_pct`, etc.), never embedded in the name string. `_CAPACITY_SUFFIX` exists only to strip old-format names from external clients — the provisioner itself never generates suffixed names. Always call `parse_proxmox_region_name()` to recover stable `(cfg, node)` — never parse the string manually.
 
 6. **`serial0: socket` on all Proxmox VMs** — prevents a Debian 12 kernel panic after disk resize. Do not remove from `create_vm`.
 
@@ -211,3 +215,41 @@ There are no automated tests or linters. Validate changes by:
 4. For changes to `wait_for_cloud_init` or `_agent_exec`: test against a running VM with `find_vmid_by_name` — avoid spinning up new VMs just to test small changes.
 
 Delete `test.py` before committing (it typically contains credentials).
+
+---
+
+## Commit Conventions
+
+All commits must follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+type(scope): short description
+
+Optional body explaining why, not what.
+```
+
+**Types:**
+| Type | When to use |
+|---|---|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `chore` | Build, deps, config — no production code change |
+| `ci` | CI/CD pipeline changes |
+| `perf` | Performance improvement |
+| `revert` | Reverts a previous commit |
+
+**Examples:**
+```
+feat: add Proxmox backend support for VM lifecycle management
+fix: clamp free_vcpus to zero when node is overcommitted
+docs: update AGENTS.md with regionStats null guard invariant
+refactor: move capacity fields out of region name string into separate fields
+chore: remove test.py containing dev credentials
+```
+
+**Rules:**
+- Subject line is lowercase, no trailing period, 72 chars max
+- Use imperative mood ("add" not "added", "fix" not "fixed")
+- Breaking changes must include `BREAKING CHANGE:` in the commit body or `!` after the type: `feat!: rename region capacity fields`
