@@ -296,11 +296,15 @@ async def get_nodes_with_capacity(cfg) -> list:
             free_storage_gb = 0
             total_storage_gb = 0
         total_vcpus = int(n.get("maxcpu") or 0)
-        total_memory_gb = int((n.get("maxmem") or 0) // (1024 ** 3))
-        free_vcpus = int(round(n["maxcpu"] * (1 - n.get("cpu", 0))))
-        free_memory_gb = int((n["maxmem"] - n.get("mem", 0)) // (1024 ** 3))
+        total_memory_mb = int(n.get("maxmem") or 0)
+        total_memory_gb = int(total_memory_mb // (1024 ** 3))
+        vms = await _get(cfg, f"/nodes/{node}/qemu") or []
+        alloc_vcpus = sum(int(vm.get("cpus", 0)) for vm in vms)
+        alloc_memory_mb = sum(int(vm.get("maxmem", 0)) for vm in vms)
+        free_vcpus = max(0, total_vcpus - alloc_vcpus)
+        free_memory_gb = max(0, int((total_memory_mb - alloc_memory_mb) // (1024 ** 3)))
         cpu_pct = int(n.get("cpu", 0) * 100)
-        ram_pct = int(n.get("mem", 0) / n["maxmem"] * 100) if n.get("maxmem") else 0
+        ram_pct = int(n.get("mem", 0) / total_memory_mb * 100) if total_memory_mb else 0
 
         def _instance_type_entry(it):
             d = it.model_dump()
