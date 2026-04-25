@@ -1,7 +1,22 @@
-import asyncio, io, re, json, urllib.parse, os
+import asyncio, io, re, json, urllib.parse, os, yaml
 import httpx, pycdlib
 import glueops.setup_logging
 from . import b64
+
+_MANAGED_BY = "github.com/GlueOps/provisioner"
+
+def _encode_description(tags: dict) -> str:
+    return (
+        "# ⚠️ Managed by automation. Do not edit.\n\n"
+        f"managed-by: {_MANAGED_BY}\n\n"
+        f"data: {b64.encode_string(json.dumps(tags))}"
+    )
+
+def _decode_description(desc: str) -> dict:
+    parsed = yaml.safe_load(desc)
+    if isinstance(parsed, dict) and "data" in parsed:
+        return json.loads(b64.decode_string(parsed["data"]))
+    return {}
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
@@ -11,8 +26,10 @@ _CAPACITY_SUFFIX = re.compile(r'-\d+cpu-\d+gb-\d+gb$')
 
 
 def _client(cfg):
+    if not cfg.proxmox_verify_ssl:
+        logger.warning(f"SSL verification disabled for {cfg.proxmox_host}")
     headers = {"Authorization": f"PVEAPIToken={cfg.proxmox_token_id}={cfg.proxmox_token_secret}"}
-    return httpx.AsyncClient(verify=False, timeout=30.0, headers=headers)
+    return httpx.AsyncClient(verify=cfg.proxmox_verify_ssl, timeout=30.0, headers=headers)
 
 
 def _base(cfg):
@@ -139,7 +156,7 @@ async def create_vm(cfg, node: str, vmid: str, vm_name: str, vcpus: int, memory_
         "boot": "order=virtio0",
         "net0": f"virtio,bridge={cfg.proxmox_bridge}",
         "serial0": "socket",
-        "description": b64.encode_string(json.dumps(tags)),
+        "description": _encode_description(tags),
     })
     await poll_task(cfg, upid)
 
@@ -148,6 +165,50 @@ async def resize_disk(cfg, node: str, vmid: str, storage_mb: int):
     result = await _put(cfg, f"/nodes/{node}/qemu/{vmid}/resize", data={"disk": "virtio0", "size": f"{storage_mb}M"})
     if isinstance(result, str) and result.startswith("UPID:"):
         await poll_task(cfg, result)
+
+
+async def _agent_exec(cfg, node: str, vmid: str, command: list[str]) -> str:
+    async with _client(cfg) as c:
+        r = await c.post(
+            f"{_base(cfg)}/nodes/{node}/qemu/{vmid}/agent/exec",
+            json={"command": command, "input-data": ""},
+        )
+        r.raise_for_status()
+        pid = r.json()["data"]["pid"]
+    for _ in range(60):
+        result = await _get(cfg, f"/nodes/{node}/qemu/{vmid}/agent/exec-status", pid=pid)
+        if result.get("exited"):
+            if result.get("exitcode", 1) != 0:
+                raise RuntimeError(f"Command exited {result.get('exitcode')}: {result.get('err-data', '')!r}")
+            return result.get("out-data", "") + result.get("err-data", "")
+        await asyncio.sleep(3)
+    raise RuntimeError("Command did not exit within 180s")
+
+
+async def wait_for_cloud_init(cfg, node: str, vmid: str, agent_timeout: int = 120, cloudinit_timeout: int = 300):
+    """Poll guest agent until up, then poll cloud-init completion."""
+    loop = asyncio.get_running_loop()
+    agent_end = loop.time() + agent_timeout
+    while loop.time() < agent_end:
+        try:
+            await _get(cfg, f"/nodes/{node}/qemu/{vmid}/agent/info")
+            logger.info(f"VM {vmid}: guest agent up, polling cloud-init status")
+            break
+        except (httpx.HTTPStatusError, httpx.TransportError):
+            await asyncio.sleep(5)
+    else:
+        logger.warning(f"VM {vmid}: guest agent not available after {agent_timeout}s, ejecting ISO anyway")
+        return
+    cloudinit_end = loop.time() + cloudinit_timeout
+    while loop.time() < cloudinit_end:
+        try:
+            await _agent_exec(cfg, node, vmid, ["ls", "/var/lib/cloud/instance/boot-finished"])
+            logger.info(f"VM {vmid}: cloud-init complete")
+            return
+        except (RuntimeError, httpx.HTTPStatusError, httpx.TransportError) as e:
+            logger.debug(f"VM {vmid}: cloud-init not ready: {e}")
+        await asyncio.sleep(5)
+    logger.warning(f"VM {vmid}: cloud-init did not complete within {cloudinit_timeout}s, ejecting ISO anyway")
 
 
 async def start_vm(cfg, node: str, vmid: str):
@@ -182,7 +243,7 @@ async def find_vmid_by_name(cfg, node: str, vm_name: str) -> str:
 
 async def edit_vm_tags(cfg, node: str, vmid: str, tags: dict):
     await _put(cfg, f"/nodes/{node}/qemu/{vmid}/config", data={
-        "description": b64.encode_string(json.dumps(tags))
+        "description": _encode_description(tags)
     })
 
 
@@ -196,7 +257,7 @@ async def list_vms(cfg) -> list:
             vm_config = await _get(cfg, f"/nodes/{r['node']}/qemu/{r['vmid']}/config")
             desc = vm_config.get("description", "")
             if desc:
-                tags = json.loads(b64.decode_string(desc))
+                tags = _decode_description(desc)
         except Exception:
             pass
         return {

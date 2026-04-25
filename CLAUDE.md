@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+> **For AI agents:** See [`.ai/AGENTS.md`](.ai/AGENTS.md) for module imports, test script patterns, Proxmox API reference, key invariants, and debugging guidance.
+
 ## What This Project Does
 
 Provisioner is a FastAPI service that manages VM lifecycles across distributed regions. It supports two backends: **libvirt** (provisions VMs via virt-install over SSH) and **Proxmox VE** (provisions VMs via the Proxmox REST API). Both backends register VMs with Guacamole for remote access and integrate with Tailscale for networking. All operations are multi-region: requests fan out across configured regions.
@@ -44,11 +46,11 @@ There are no automated tests or linting tools configured in this project.
 
 **Backend routing:** Each endpoint calls `proxmox.parse_proxmox_region_name()` first; if it matches a Proxmox cluster config the Proxmox path runs, otherwise the libvirt path runs unchanged. Proxmox region names are dynamic strings like `{cluster}-{node}-{free_vcpu}cpu-{free_gb}gb-{free_storage_gb}gb` — the capacity suffix is stripped at request time to recover the stable cluster+node identifier.
 
-**VM metadata storage:** Tags/metadata are JSON-serialized then base64-encoded and stored in the VM description field. `b64.py` handles encoding; `virsh.py` reads/writes it for libvirt, `proxmox.py` reads/writes it for Proxmox.
+**VM metadata storage:** Tags/metadata are JSON-serialized, base64-encoded, and stored in the VM description field. For Proxmox, the description is a YAML document with a human-readable warning header, a `managed-by` key, and a `data` key containing the base64 blob. `_encode_description`/`_decode_description` in `proxmox.py` handle the format; `virsh.py` reads/writes raw base64 for libvirt.
 
 **Multi-region fan-out:** The `/v1/list` endpoint gathers results from all regions concurrently using `asyncio.gather()`. Proxmox regions use `GET /cluster/resources?type=vm`; libvirt regions use `virsh list`. The `/v1/regions` endpoint queries each Proxmox cluster live on every request and expands each cluster into per-node entries with current free capacity in the name.
 
-**Proxmox cloud-init:** VM creation builds a cidata ISO with pycdlib (Rock Ridge, `vol_ident="cidata"`) containing `user-data` and `meta-data`, uploads it to Proxmox storage, attaches it as `ide2`, then ejects and deletes it after the VM starts. `serial0: socket` is set on all Proxmox VMs to prevent a Debian 12 kernel panic after disk resize.
+**Proxmox cloud-init:** VM creation builds a cidata ISO with pycdlib (Rock Ridge, `vol_ident="cidata"`) containing `user-data` and `meta-data`, uploads it to Proxmox storage, and attaches it as `ide2`. After the VM starts, `wait_for_cloud_init` polls the qemu-guest-agent until `/var/lib/cloud/instance/boot-finished` exists (cloud-init's own completion marker), then the ISO is ejected and deleted. The ISO eject is in a `finally` block — it always runs even if cloud-init times out. `serial0: socket` is set on all Proxmox VMs to prevent a Debian 12 kernel panic after disk resize.
 
 **Proxmox image caching:** Disk images are downloaded once per node into import storage (`{storage}:import/{image}.qcow2`) and reused across VMs. The cache is never evicted. Concurrent download races are handled by catching 409 and polling until the image appears.
 
@@ -81,6 +83,7 @@ There are no automated tests or linting tools configured in this project.
   "proxmox_token_secret": "...",
   "proxmox_storage": "local",
   "proxmox_bridge": "vmbr_nat",
+  "proxmox_verify_ssl": true,
   "available_instance_types": [
     {"instance_type": "2vcpu-8gb-32ssd",    "vcpus": 2,  "memory_mb": 8192,  "storage_mb": 32000},
     {"instance_type": "4vcpu-8gb-32ssd",    "vcpus": 4,  "memory_mb": 8192,  "storage_mb": 32000},

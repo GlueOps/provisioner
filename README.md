@@ -1,155 +1,165 @@
-# provisioner
-
-FastAPI to provision virtualmachines using libvirt via SSH.
-
 # Provisioner
 
-This project provides an API to provision virtual machines (VMs) through libvirt.
+FastAPI service that manages VM lifecycles across distributed regions. Supports two backends:
 
-### Prerequisites
+- **libvirt** — provisions VMs via virt-install over SSH on remote bare-metal nodes
+- **Proxmox VE** — provisions VMs via the Proxmox REST API
 
-- Devbox
+Both backends register VMs with Guacamole for remote access and integrate with Tailscale for networking.
+
+---
+
+## Prerequisites
+
+- [Devbox](https://www.jetify.com/devbox)
 - Docker
 
-### Devbox
+## Development
 
-To set up the development environment using Devbox, run:
-```sh
-devbox shell
-devbox run dev
+```bash
+devbox shell          # enter the dev environment
+pipenv install        # install Python dependencies
+fastapi dev           # start dev server with hot reload (runs app/main.py)
 ```
 
+See [`CLAUDE.md`](CLAUDE.md) for architecture details and [`.ai/AGENTS.md`](.ai/AGENTS.md) for module reference and testing patterns.
 
-### Deployment
+---
 
-#### Setup tailscale ACLs
+## Configuration
 
-Here is an example ACL that does the following:
+All configuration is passed via environment variables. Create a file called `secrets` with the following:
 
-- Machines with `tag:app-prod-provisioner-api` can talk to `tag:app-prod-provisioner-nodes` and vice versa.
-- Users in `group:app-prod-provisioner-developers` can talk to `tag:app-prod-provisioner-api` and  `tag:app-prod-provisioner-nodes` 
-- `tim.cook@glueops.dev` is part of `group:app-prod-provisioner-developers`
-- `tim.cook@glueops.dev` can access their own instances tagged with `tag:tim-cook` however because we are using a SVC Admin account to tag the machines `tim.cook` doesn't actually own the tag itself.
+### Required (all deployments)
 
-The goals of this ACL policy are to allow the provisioner API to access "provisioner nodes" via SSH (port 2222 since tailscale SSH takes over port 22). `tim.cook` needs to be able to administrate provisioner nodes so he is part of `group:app-prod-provisioner-developers` otherwise he can be kept out of this group. `tim.cook` also uses a workspace himself so he needs to have a tag himself. Any user that uses a developer workspace will need their own tag so that the [slack workspace bot](https://github.com/GlueOps/slackbot-developer-workspaces) can assign machines to them (e.g.  `tag:tim-cook`).
+```bash
+API_TOKEN=                        # bearer token for all API endpoints
+PROVISIONER_ENVIRONMENT=          # prod or nonprod (filters available VM images)
+DOWNLOAD_SERVER_URL=              # base URL for VM disk images (libvirt regions)
+GUACAMOLE_SERVER_URL=
+GUACAMOLE_SERVER_USERNAME=
+GUACAMOLE_SERVER_PASSWORD=
+BASTION_SERVER_IP=
+BASTION_SERVER_PORT=
+BASTION_SERVER_USER=
+BASTION_SERVER_KEY=
+TAILSCALE_TAILNET_NAME=
+TAILSCALE_API_TOKEN=
+BAREMETAL_SERVER_CONFIGS=         # JSON array of region configs (see below)
+```
 
-When testing new policies/ACLs it's best to just create a separate tailnet/tailscale account for testing.
+### Required if any Proxmox region is configured
 
+```bash
+PROXMOX_DOWNLOAD_SERVER_URL=      # base URL for VM disk images (Proxmox regions)
+```
+
+### Optional
+
+```bash
+LOG_LEVEL=INFO                    # default: INFO
+```
+
+### BAREMETAL_SERVER_CONFIGS format
+
+A JSON array of region config objects. Each entry is either a libvirt (`SSHConfig`) or Proxmox (`ProxmoxConfig`) region, detected by the `backend_type` field (defaults to `"libvirt"`).
+
+**Libvirt region:**
 ```json
 {
-    "acls": [
-        {
-            "action": "accept",
-            "dst": [
-                "tag:app-prod-provisioner-api:*",
-                "tag:app-prod-provisioner-nodes:*"
-            ],
-            "src": [
-                "group:app-prod-provisioner-developers"
-            ]
-        },
-        {
-            "action": "accept",
-            "dst": [
-                "tag:app-prod-provisioner-nodes:*"
-            ],
-            "src": [
-                "tag:app-prod-provisioner-api"
-            ]
-        },
-        {
-            "action": "accept",
-            "dst": [
-                "tag:tim-cook:*"
-            ],
-            "src": [
-                "tim.cook@glueops.dev"
-            ]
-        }
-    ],
-    "groups": {
-        "group:app-prod-provisioner-developers": [
-            "tim.cook@glueops.dev"
-        ]
-    },
-    "ssh": [
-        {
-            "action": "check",
-            "dst": [
-                "autogroup:self"
-            ],
-            "src": [
-                "autogroup:member"
-            ],
-            "users": [
-                "autogroup:nonroot",
-                "root"
-            ]
-        },
-        {
-            "action": "check",
-            "dst": [
-                "tag:tim-cook"
-            ],
-            "src": [
-                "autogroup:member",
-                "autogroup:admin"
-            ],
-            "users": [
-                "autogroup:nonroot",
-                "root"
-            ]
-        },
-        {
-            "action": "check",
-            "dst": [
-                "tag:app-prod-provisioner-api",
-                "tag:app-prod-provisioner-nodes"
-            ],
-            "src": [
-                "group:app-prod-provisioner-developers"
-            ],
-            "users": [
-                "autogroup:nonroot",
-                "root"
-            ]
-        }
-    ],
-    "tagOwners": {
-        "tag:tim-cook": [
-            "autogroup:admin"
-        ],
-        "tag:app-prod-provisioner-api": [
-            "group:app-prod-provisioner-developers"
-        ],
-        "tag:app-prod-provisioner-nodes": [
-            "group:app-prod-provisioner-developers"
-        ]
-    }
+  "backend_type": "libvirt",
+  "region_name": "us-east-1",
+  "enabled": true,
+  "host": "10.0.0.1",
+  "port": 2222,
+  "user": "debian",
+  "connect_uri": "qemu+ssh://debian@10.0.0.1:2222/system?keyfile=/app/id_ed25519",
+  "available_instance_types": [
+    {"instance_type": "2vcpu-8gb-32ssd", "vcpus": 2, "memory_mb": 8192, "storage_mb": 32000}
+  ]
 }
 ```
 
-
-
-### Deploy Provisioner Nodes
-
-- Run `install-server.sh` on the provisioner nodes.
-- Ensure proper tailscale tags are assigned to provisioner nodes (e.g. `tag:app-nonprod-provisioner-nodes`)
-
-
-### Deploy Provisioner APIs
-
-- Deploy a debian host
-- Run `curl setup.glueops.dev | bash` and then add it to tailscale with the respective tag (e.g. `tag:app-nonprod-provisioner-api`)
-- Create a file called `provisioner/secrets`
-- Add these `env` variables to the `secrets` file
-```bash
-API_TOKEN
-SSH_HOST
-SSH_PORT
-SSH_PRIVATE_KEY_ED25519_BASE64_ENCODED
-SSH_USER
+**Proxmox region:**
+```json
+{
+  "backend_type": "proxmox",
+  "region_name": "proxmox-cluster-1",
+  "enabled": true,
+  "proxmox_host": "1.2.3.4",
+  "proxmox_port": 8006,
+  "proxmox_token_id": "root@pam!tokenid",
+  "proxmox_token_secret": "<uuid>",
+  "proxmox_storage": "local",
+  "proxmox_bridge": "vmbr0",
+  "proxmox_verify_ssl": true,
+  "available_instance_types": [
+    {"instance_type": "2vcpu-8gb-32ssd",    "vcpus": 2,  "memory_mb": 8192,  "storage_mb": 32000},
+    {"instance_type": "4vcpu-16gb-32ssd",   "vcpus": 4,  "memory_mb": 16384, "storage_mb": 32000},
+    {"instance_type": "20vcpu-52gb-120ssd", "vcpus": 20, "memory_mb": 53248, "storage_mb": 120000}
+  ]
+}
 ```
-- Run with `docker run -it --env-file provisioner/secrets <container-image/tag>`
 
-_NOTE: this will run within an interactive terminal so it's best to use tmux or similar so that it keeps running in the background. Alternatively you can remove `it` and just use `d` to have it run as a daemon in the background._
+Proxmox region names are dynamic — the API expands each node into a name like `proxmox-cluster-1-node-01-24cpu-48gb-200gb` reflecting live available capacity.
+
+---
+
+## Deployment
+
+### Docker
+
+```bash
+docker build -t provisioner:latest .
+docker run -d --env-file secrets provisioner:latest
+```
+
+### Tailscale ACLs
+
+The provisioner API and its nodes communicate over Tailscale. Example ACL policy:
+
+- `tag:app-prod-provisioner-api` ↔ `tag:app-prod-provisioner-nodes` (mutual access)
+- `group:app-prod-provisioner-developers` can reach both
+- Per-user workspace tags (e.g. `tag:tim-cook`) allow the [slackbot](https://github.com/GlueOps/slackbot-developer-workspaces) to assign VMs to users
+
+```json
+{
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["group:app-prod-provisioner-developers"],
+      "dst": ["tag:app-prod-provisioner-api:*", "tag:app-prod-provisioner-nodes:*"]
+    },
+    {
+      "action": "accept",
+      "src": ["tag:app-prod-provisioner-api"],
+      "dst": ["tag:app-prod-provisioner-nodes:*"]
+    }
+  ],
+  "groups": {
+    "group:app-prod-provisioner-developers": ["user@example.com"]
+  },
+  "tagOwners": {
+    "tag:app-prod-provisioner-api":   ["group:app-prod-provisioner-developers"],
+    "tag:app-prod-provisioner-nodes": ["group:app-prod-provisioner-developers"]
+  }
+}
+```
+
+### Libvirt nodes
+
+- Run `install-server.sh` on each provisioner node
+- Assign the appropriate Tailscale tag (e.g. `tag:app-nonprod-provisioner-nodes`)
+
+### Proxmox nodes
+
+- Proxmox VE 8.x with qemu-guest-agent enabled on VM images
+- API token with sufficient permissions to create/delete/manage VMs
+- Storage pool and network bridge configured per the region config above
+
+---
+
+## CI/CD
+
+- **`container_image.yaml`** — builds and pushes Docker image to ghcr.io on version tags (`v*`)
+- **`bump_version.yaml`** — auto-generates new releases every 2 days via shared GlueOps workflow

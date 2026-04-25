@@ -122,6 +122,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             vm_created = True
             await proxmox.resize_disk(proxmox_cfg, node, vmid, vm_specs.storage_mb)
             await proxmox.start_vm(proxmox_cfg, node, vmid)
+            await proxmox.wait_for_cloud_init(proxmox_cfg, node, vmid)
 
             guacamole_token, data_source = guacamole.get_data(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_USERNAME, GUACAMOLE_SERVER_PASSWORD)
             connection_groups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)

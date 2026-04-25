@@ -40,6 +40,7 @@ class ProxmoxConfig(RegionBase):
     proxmox_token_secret: str = Field(exclude=True)
     proxmox_storage: str
     proxmox_bridge: str
+    proxmox_verify_ssl: bool = True
 
 
 def load_configs_from_env(server_configs) -> List[Union[SSHConfig, ProxmoxConfig]]:
