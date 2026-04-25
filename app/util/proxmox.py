@@ -12,9 +12,16 @@ def _encode_description(tags: dict) -> str:
         f"data: {b64.encode_string(json.dumps(tags))}"
     )
 
+def _is_managed(desc: str) -> bool:
+    try:
+        parsed = yaml.safe_load(desc)
+        return isinstance(parsed, dict) and parsed.get("managed-by") == _MANAGED_BY
+    except Exception:
+        return False
+
 def _decode_description(desc: str) -> dict:
     parsed = yaml.safe_load(desc)
-    if isinstance(parsed, dict) and "data" in parsed:
+    if isinstance(parsed, dict) and parsed.get("managed-by") == _MANAGED_BY and "data" in parsed:
         return json.loads(b64.decode_string(parsed["data"]))
     return {}
 
@@ -252,14 +259,14 @@ async def list_vms(cfg) -> list:
     qemu_vms = [r for r in (resources or []) if r.get("type") == "qemu"]
 
     async def get_vm_details(r):
-        tags = {}
         try:
             vm_config = await _get(cfg, f"/nodes/{r['node']}/qemu/{r['vmid']}/config")
             desc = vm_config.get("description", "")
-            if desc:
-                tags = _decode_description(desc)
+            if not _is_managed(desc):
+                return None
+            tags = _decode_description(desc)
         except Exception:
-            pass
+            return None
         return {
             "dom_id": str(r["vmid"]),
             "name": r.get("name", ""),
@@ -268,7 +275,8 @@ async def list_vms(cfg) -> list:
             "tags": tags,
         }
 
-    return list(await asyncio.gather(*[get_vm_details(r) for r in qemu_vms]))
+    results = await asyncio.gather(*[get_vm_details(r) for r in qemu_vms])
+    return [r for r in results if r is not None]
 
 
 async def get_nodes_with_capacity(cfg) -> list:
