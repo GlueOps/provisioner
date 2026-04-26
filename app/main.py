@@ -111,7 +111,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         if vm_specs is None:
             raise ValueError(f"Instance type {vm.instance_type} not found in region {vm.region_name}")
 
-        vmid = await proxmox.get_next_vmid(proxmox_cfg)
+        vmid = None
         iso_filename = None
         vm_created = False
         try:
@@ -119,7 +119,16 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             meta_data = f"instance-id: {vm.vm_name}\nlocal-hostname: {vm.vm_name}\n"
             iso_bytes = proxmox.build_iso(decoded_user_data.encode(), meta_data.encode())
             iso_filename = await proxmox.upload_iso(proxmox_cfg, node, vm.vm_name, iso_bytes)
-            await proxmox.create_vm(proxmox_cfg, node, vmid, vm.vm_name, vm_specs.vcpus, vm_specs.memory_mb, vm.image, iso_filename, vm.tags)
+            for attempt in range(5):
+                vmid = await proxmox.get_next_vmid(proxmox_cfg)
+                try:
+                    await proxmox.create_vm(proxmox_cfg, node, vmid, vm.vm_name, vm_specs.vcpus, vm_specs.memory_mb, vm.image, iso_filename, vm.tags)
+                    break
+                except Exception as e:
+                    if attempt < 4 and "already exists" in str(e):
+                        logger.warning(f"VMID {vmid} conflict on attempt {attempt + 1}, retrying")
+                        continue
+                    raise
             vm_created = True
             await proxmox.resize_disk(proxmox_cfg, node, vmid, vm_specs.storage_mb)
             await proxmox.start_vm(proxmox_cfg, node, vmid)
@@ -140,7 +149,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
                     logger.error(f"Compensating delete failed for VM {vmid}: {cleanup_err}")
             raise
         finally:
-            if iso_filename:
+            if iso_filename and vmid:
                 await proxmox.eject_and_delete_iso(proxmox_cfg, node, vmid, iso_filename)
 
         logger.info(vm.tags)
