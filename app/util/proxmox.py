@@ -98,7 +98,7 @@ async def ensure_image_cached(cfg, node: str, image: str, download_url: str):
     logger.info(f"Downloading {image} to {node}")
     try:
         upid = await _post(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/download-url", data={
-            "url": f"{download_url}/{image}.qcow2",
+            "url": f"{download_url.rstrip('/')}/{image}.qcow2",
             "filename": f"{image}.qcow2",
             "content": "import",
         })
