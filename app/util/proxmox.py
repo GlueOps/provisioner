@@ -1,0 +1,342 @@
+import asyncio, io, re, json, urllib.parse, os, yaml
+import httpx, pycdlib
+import glueops.setup_logging
+from . import b64
+
+_MANAGED_BY = "github.com/GlueOps/provisioner"
+
+def _encode_description(tags: dict) -> str:
+    return (
+        "# ⚠️ Managed by automation. Do not edit.\n\n"
+        f"managed-by: {_MANAGED_BY}\n\n"
+        f"data: {b64.encode_string(json.dumps(tags))}"
+    )
+
+def _is_managed(desc: str) -> bool:
+    try:
+        parsed = yaml.safe_load(desc)
+        return isinstance(parsed, dict) and parsed.get("managed-by") == _MANAGED_BY
+    except Exception:
+        return False
+
+def _decode_description(desc: str) -> dict:
+    parsed = yaml.safe_load(desc)
+    if isinstance(parsed, dict) and parsed.get("managed-by") == _MANAGED_BY and "data" in parsed:
+        return json.loads(b64.decode_string(parsed["data"]))
+    return {}
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+logger = glueops.setup_logging.configure(level=LOG_LEVEL)
+
+# Kept for backwards compatibility — strips old capacity suffixes from region names
+# passed in by external clients. The provisioner itself no longer generates suffixed names.
+_CAPACITY_SUFFIX = re.compile(r' \(\d+ vCPU, \d+GB RAM, \d+GB Disk\)$')
+_OVER_ALLOCATED = " (Over Allocated)"
+
+
+def _client(cfg):
+    if not cfg.proxmox_verify_ssl:
+        logger.warning(f"SSL verification disabled for {cfg.proxmox_host}")
+    headers = {"Authorization": f"PVEAPIToken={cfg.proxmox_token_id}={cfg.proxmox_token_secret}"}
+    return httpx.AsyncClient(verify=cfg.proxmox_verify_ssl, timeout=30.0, headers=headers)
+
+
+def _base(cfg):
+    return f"https://{cfg.proxmox_host}:{cfg.proxmox_port}/api2/json"
+
+
+async def _get(cfg, path, **params):
+    async with _client(cfg) as c:
+        r = await c.get(f"{_base(cfg)}{path}", params=params or None)
+        r.raise_for_status()
+        return r.json()["data"]
+
+
+async def _post(cfg, path, data=None, files=None):
+    async with _client(cfg) as c:
+        r = await c.post(f"{_base(cfg)}{path}", data=data, files=files)
+        r.raise_for_status()
+        return r.json()["data"]
+
+
+async def _put(cfg, path, data):
+    async with _client(cfg) as c:
+        r = await c.put(f"{_base(cfg)}{path}", data=data)
+        r.raise_for_status()
+        return r.json()["data"]
+
+
+async def _delete(cfg, path, **params):
+    async with _client(cfg) as c:
+        r = await c.delete(f"{_base(cfg)}{path}", params=params or None)
+        r.raise_for_status()
+        return r.json()["data"]
+
+
+async def poll_task(cfg, upid: str):
+    task_node = upid.split(":")[1]
+    encoded = urllib.parse.quote(upid, safe="")
+    while True:
+        data = await _get(cfg, f"/nodes/{task_node}/tasks/{encoded}/status")
+        if data["status"] == "stopped":
+            if data.get("exitstatus") != "OK":
+                raise RuntimeError(f"Task failed: {data}")
+            return
+        await asyncio.sleep(3)
+
+
+async def get_next_vmid(cfg) -> str:
+    return await _get(cfg, "/cluster/nextid")
+
+
+async def ensure_image_cached(cfg, node: str, image: str, download_url: str):
+    content = await _get(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/content", content="import")
+    volid = f"{cfg.proxmox_storage}:import/{image}.qcow2"
+    if volid in {v["volid"] for v in (content or [])}:
+        logger.info(f"Image {image} already cached on {node}")
+        return
+    logger.info(f"Downloading {image} to {node}")
+    try:
+        upid = await _post(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/download-url", data={
+            "url": f"{download_url.rstrip('/')}/{image}.qcow2",
+            "filename": f"{image}.qcow2",
+            "content": "import",
+        })
+        await poll_task(cfg, upid)
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 409:
+            # Another download already in progress — wait for it to complete
+            logger.info(f"Image {image} download already in progress on {node}, waiting...")
+            for _ in range(60):
+                await asyncio.sleep(5)
+                content = await _get(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/content", content="import")
+                if volid in {v["volid"] for v in (content or [])}:
+                    return
+            raise RuntimeError(f"Timed out waiting for {image} to become available on {node}")
+        raise
+
+
+def build_iso(user_data: bytes, meta_data: bytes) -> bytes:
+    iso = pycdlib.PyCdlib()
+    iso.new(vol_ident="cidata", rock_ridge="1.09")
+    iso.add_fp(io.BytesIO(user_data), length=len(user_data), iso_path="/USERDATA;1", rr_name="user-data")
+    iso.add_fp(io.BytesIO(meta_data), length=len(meta_data), iso_path="/METADATA;1", rr_name="meta-data")
+    buf = io.BytesIO()
+    iso.write_fp(buf)
+    iso.close()
+    return buf.getvalue()
+
+
+async def upload_iso(cfg, node: str, vm_name: str, iso_bytes: bytes) -> str:
+    iso_filename = f"{vm_name}-cloudinit.iso"
+    upid = await _post(
+        cfg,
+        f"/nodes/{node}/storage/{cfg.proxmox_storage}/upload",
+        data={"content": "iso"},
+        files={"filename": (iso_filename, io.BytesIO(iso_bytes), "application/octet-stream")}
+    )
+    await poll_task(cfg, upid)
+    return iso_filename
+
+
+async def eject_and_delete_iso(cfg, node: str, vmid: str, iso_filename: str):
+    try:
+        await _put(cfg, f"/nodes/{node}/qemu/{vmid}/config", data={"ide2": "none,media=cdrom"})
+    except Exception as e:
+        logger.error(f"Failed to eject ISO from VM {vmid}: {e}")
+    try:
+        iso_volid = urllib.parse.quote(f"{cfg.proxmox_storage}:iso/{iso_filename}", safe="")
+        await _delete(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/content/{iso_volid}")
+    except Exception as e:
+        logger.error(f"Failed to delete ISO {iso_filename}: {e}")
+
+
+async def create_vm(cfg, node: str, vmid: str, vm_name: str, vcpus: int, memory_mb: int, image: str, iso_filename: str, tags: dict):
+    upid = await _post(cfg, f"/nodes/{node}/qemu", data={
+        "vmid": vmid,
+        "name": vm_name,
+        "memory": memory_mb,
+        "cores": vcpus,
+        "cpu": "x86-64-v2-AES",
+        "ostype": "l26",
+        "agent": "1",
+        "virtio0": f"{cfg.proxmox_storage}:0,import-from={cfg.proxmox_storage}:import/{image}.qcow2,iothread=1,format=raw",
+        "ide2": f"{cfg.proxmox_storage}:iso/{iso_filename},media=cdrom",
+        "boot": "order=virtio0",
+        "net0": f"virtio,bridge={cfg.proxmox_bridge}",
+        "serial0": "socket",
+        "description": _encode_description(tags),
+    })
+    await poll_task(cfg, upid)
+
+
+async def resize_disk(cfg, node: str, vmid: str, storage_mb: int):
+    result = await _put(cfg, f"/nodes/{node}/qemu/{vmid}/resize", data={"disk": "virtio0", "size": f"{storage_mb}M"})
+    if isinstance(result, str) and result.startswith("UPID:"):
+        await poll_task(cfg, result)
+
+
+async def _agent_exec(cfg, node: str, vmid: str, command: list[str]) -> str:
+    async with _client(cfg) as c:
+        r = await c.post(
+            f"{_base(cfg)}/nodes/{node}/qemu/{vmid}/agent/exec",
+            json={"command": command, "input-data": ""},
+        )
+        r.raise_for_status()
+        pid = r.json()["data"]["pid"]
+    for _ in range(60):
+        result = await _get(cfg, f"/nodes/{node}/qemu/{vmid}/agent/exec-status", pid=pid)
+        if result.get("exited"):
+            if result.get("exitcode", 1) != 0:
+                raise RuntimeError(f"Command exited {result.get('exitcode')}: {result.get('err-data', '')!r}")
+            return result.get("out-data", "") + result.get("err-data", "")
+        await asyncio.sleep(3)
+    raise RuntimeError("Command did not exit within 180s")
+
+
+async def wait_for_cloud_init(cfg, node: str, vmid: str, agent_timeout: int = 120, cloudinit_timeout: int = 300):
+    """Poll guest agent until up, then poll cloud-init completion."""
+    loop = asyncio.get_running_loop()
+    agent_end = loop.time() + agent_timeout
+    while loop.time() < agent_end:
+        try:
+            await _get(cfg, f"/nodes/{node}/qemu/{vmid}/agent/info")
+            logger.info(f"VM {vmid}: guest agent up, polling cloud-init status")
+            break
+        except (httpx.HTTPStatusError, httpx.TransportError):
+            await asyncio.sleep(5)
+    else:
+        logger.warning(f"VM {vmid}: guest agent not available after {agent_timeout}s, ejecting ISO anyway")
+        return
+    cloudinit_end = loop.time() + cloudinit_timeout
+    while loop.time() < cloudinit_end:
+        try:
+            await _agent_exec(cfg, node, vmid, ["ls", "/var/lib/cloud/instance/boot-finished"])
+            logger.info(f"VM {vmid}: cloud-init complete")
+            return
+        except (RuntimeError, httpx.HTTPStatusError, httpx.TransportError) as e:
+            logger.debug(f"VM {vmid}: cloud-init not ready: {e}")
+        await asyncio.sleep(5)
+    logger.warning(f"VM {vmid}: cloud-init did not complete within {cloudinit_timeout}s, ejecting ISO anyway")
+
+
+async def start_vm(cfg, node: str, vmid: str):
+    upid = await _post(cfg, f"/nodes/{node}/qemu/{vmid}/status/start")
+    await poll_task(cfg, upid)
+
+
+async def stop_vm(cfg, node: str, vmid: str):
+    upid = await _post(cfg, f"/nodes/{node}/qemu/{vmid}/status/stop")
+    await poll_task(cfg, upid)
+
+
+async def delete_vm(cfg, node: str, vmid: str):
+    try:
+        status_data = await _get(cfg, f"/nodes/{node}/qemu/{vmid}/status/current")
+        if status_data.get("status") == "running":
+            upid = await _post(cfg, f"/nodes/{node}/qemu/{vmid}/status/stop")
+            await poll_task(cfg, upid)
+    except Exception as e:
+        logger.error(f"Failed to stop VM {vmid} before delete: {e}")
+    upid = await _delete(cfg, f"/nodes/{node}/qemu/{vmid}", purge=1)
+    await poll_task(cfg, upid)
+
+
+async def find_vmid_by_name(cfg, node: str, vm_name: str) -> str:
+    vms = await _get(cfg, f"/nodes/{node}/qemu")
+    for vm in (vms or []):
+        if vm.get("name") == vm_name:
+            return str(vm["vmid"])
+    raise ValueError(f"VM {vm_name!r} not found on node {node}")
+
+
+async def edit_vm_tags(cfg, node: str, vmid: str, tags: dict):
+    await _put(cfg, f"/nodes/{node}/qemu/{vmid}/config", data={
+        "description": _encode_description(tags)
+    })
+
+
+async def list_vms(cfg) -> list:
+    resources = await _get(cfg, "/cluster/resources", type="vm")
+    qemu_vms = [r for r in (resources or []) if r.get("type") == "qemu"]
+
+    async def get_vm_details(r):
+        try:
+            vm_config = await _get(cfg, f"/nodes/{r['node']}/qemu/{r['vmid']}/config")
+            desc = vm_config.get("description", "")
+            if not _is_managed(desc):
+                return None
+            tags = _decode_description(desc)
+        except Exception:
+            return None
+        return {
+            "dom_id": str(r["vmid"]),
+            "name": r.get("name", ""),
+            "region_name": f"{cfg.region_name}-{r['node']}",
+            "state": r.get("status", "unknown"),
+            "tags": tags,
+        }
+
+    results = await asyncio.gather(*[get_vm_details(r) for r in qemu_vms])
+    return [r for r in results if r is not None]
+
+
+async def get_nodes_with_capacity(cfg) -> list:
+    nodes = await _get(cfg, "/nodes")
+    results = []
+    for n in (nodes or []):
+        if n.get("status") != "online":
+            continue
+        node = n["node"]
+        try:
+            storage = await _get(cfg, f"/nodes/{node}/storage/{cfg.proxmox_storage}/status")
+            free_storage_gb = int(storage.get("avail", 0) // (1024 ** 3))
+            total_storage_gb = int(storage.get("total", 0) // (1024 ** 3))
+        except Exception:
+            free_storage_gb = 0
+            total_storage_gb = 0
+        total_vcpus = int(n.get("maxcpu") or 0)
+        total_memory_mb = int(n.get("maxmem") or 0)
+        total_memory_gb = int(total_memory_mb // (1024 ** 3))
+        vms = await _get(cfg, f"/nodes/{node}/qemu") or []
+        alloc_vcpus = sum(int(vm.get("cpus", 0)) for vm in vms)
+        alloc_memory_mb = sum(int(vm.get("maxmem", 0)) for vm in vms)
+        free_vcpus = max(0, total_vcpus - alloc_vcpus)
+        free_memory_gb = max(0, int((total_memory_mb - alloc_memory_mb) // (1024 ** 3)))
+        cpu_pct = int(n.get("cpu", 0) * 100)
+        ram_pct = int(n.get("mem", 0) / total_memory_mb * 100) if total_memory_mb else 0
+
+        def _instance_type_entry(it):
+            d = it.model_dump()
+            if it.vcpus > free_vcpus or it.memory_mb > free_memory_gb * 1024 or it.storage_mb > free_storage_gb * 1024:
+                d["instance_type"] += _OVER_ALLOCATED
+            return d
+
+        results.append({
+            "region_name": f"{cfg.region_name}-{node}",
+            "enabled": cfg.enabled,
+            "available_instance_types": [_instance_type_entry(it) for it in cfg.available_instance_types],
+            "total_vcpus": total_vcpus,
+            "total_memory_gb": total_memory_gb,
+            "total_storage_gb": total_storage_gb,
+            "free_vcpus": free_vcpus,
+            "free_memory_gb": free_memory_gb,
+            "free_storage_gb": free_storage_gb,
+            "cpu_pct": cpu_pct,
+            "ram_pct": ram_pct,
+        })
+    return results
+
+
+def parse_proxmox_region_name(region_name: str, configs: list) -> tuple:
+    """Strip capacity suffix and find the matching ProxmoxConfig + node name."""
+    stable = _CAPACITY_SUFFIX.sub("", region_name)
+    for cfg in configs:
+        if getattr(cfg, "backend_type", "libvirt") != "proxmox":
+            continue
+        prefix = cfg.region_name + "-"
+        if stable.startswith(prefix):
+            node = stable[len(prefix):]
+            if node:
+                return cfg, node
+    raise ValueError(f"No Proxmox config found for region: {region_name}")
