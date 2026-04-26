@@ -4,7 +4,7 @@ from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole, tailscale, proxmox
-import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
+import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio, random
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message, VmTags
 
 
@@ -125,12 +125,22 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
                     await proxmox.create_vm(proxmox_cfg, node, vmid, vm.vm_name, vm_specs.vcpus, vm_specs.memory_mb, vm.image, iso_filename, vm.tags)
                     break
                 except Exception as e:
-                    if attempt < 4 and "already exists" in str(e):
+                    if attempt < 4 and ("already exists" in str(e) or "can't lock file" in str(e)):
                         logger.warning(f"VMID {vmid} conflict on attempt {attempt + 1}, retrying")
                         continue
                     raise
             vm_created = True
-            await proxmox.resize_disk(proxmox_cfg, node, vmid, vm_specs.storage_mb)
+            for attempt in range(5):
+                try:
+                    await proxmox.resize_disk(proxmox_cfg, node, vmid, vm_specs.storage_mb)
+                    break
+                except Exception as e:
+                    if attempt < 4 and "got timeout" in str(e):
+                        delay = (2 ** attempt) * 5 + random.uniform(0, 5)
+                        logger.warning(f"resize_disk timeout for VM {vmid} on attempt {attempt + 1}, retrying in {delay:.1f}s")
+                        await asyncio.sleep(delay)
+                        continue
+                    raise
             await proxmox.start_vm(proxmox_cfg, node, vmid)
             await proxmox.wait_for_cloud_init(proxmox_cfg, node, vmid)
 
