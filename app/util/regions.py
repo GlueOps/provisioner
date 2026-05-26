@@ -48,6 +48,7 @@ class ProxmoxConfig(RegionBase):
     proxmox_token_secret: str = Field(exclude=True)
     proxmox_storage: str
     proxmox_bridge: str
+    proxmox_vlan_tag: int
     proxmox_verify_ssl: bool = True
 
 

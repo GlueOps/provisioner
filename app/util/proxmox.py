@@ -163,7 +163,7 @@ async def create_vm(cfg, node: str, vmid: str, vm_name: str, vcpus: int, memory_
         "virtio0": f"{cfg.proxmox_storage}:0,import-from={cfg.proxmox_storage}:import/{image}.qcow2,iothread=1,format=raw",
         "ide2": f"{cfg.proxmox_storage}:iso/{iso_filename},media=cdrom",
         "boot": "order=virtio0",
-        "net0": f"virtio,bridge={cfg.proxmox_bridge}",
+        "net0": f"virtio,bridge={cfg.proxmox_bridge},tag={cfg.proxmox_vlan_tag}",
         "serial0": "socket",
         "description": _encode_description(tags),
     })

@@ -84,6 +84,7 @@ There are no automated tests or linting tools configured in this project.
   "proxmox_token_secret": "...",
   "proxmox_storage": "local",
   "proxmox_bridge": "vmbr_nat",
+  "proxmox_vlan_tag": 100,
   "proxmox_verify_ssl": true,
   "available_instance_types": [
     {"instance_type": "2vcpu-8gb-32ssd",    "vcpus": 2,  "memory_mb": 8192,  "storage_mb": 32000},
