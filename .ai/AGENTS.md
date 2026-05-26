@@ -55,6 +55,7 @@ cfg = types.SimpleNamespace(
     proxmox_token_secret="<UUID>",                    # UUID only — NOT "tokenname=UUID"
     proxmox_storage="<STORAGE_NAME>",                 # e.g. "local"
     proxmox_bridge="<BRIDGE_NAME>",                   # e.g. "vmbr0"
+    proxmox_vlan_tag=100,                             # VLAN tag applied to net0
     proxmox_verify_ssl=True,                          # set False for self-signed certs
     region_name="<REGION_NAME>",                      # e.g. "proxmox-cluster-1"
 )
