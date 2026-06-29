@@ -2,8 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.13.6/.schema/devbox.schema.json",
   "packages": [
     "python-full@3.13.5",
-    "pipenv@2025.0.4",
-    "libvirt@11.6.0",
+    "pipenv@2026.0.3",
+    "libvirt@12.1.0",
     "virt-manager@5.1.0"
   ],
   "shell": {
