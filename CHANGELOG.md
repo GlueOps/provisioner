@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.0.0](https://github.com/GlueOps/provisioner/compare/v3.0.0...v4.0.0) (2026-08-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* WAGGLE_API_URL and WAGGLE_API_KEY env vars are removed; set waggle_api_url/waggle_api_key on every proxmox entry in BAREMETAL_SERVER_CONFIGS instead.
+
+### Features
+
+* per-region waggle credentials ([#226](https://github.com/GlueOps/provisioner/issues/226)) ([d87f49f](https://github.com/GlueOps/provisioner/commit/d87f49f868d6d2f7883069fd977f80e3228c05e2))
+* update docker/build-push-action to v7.3.0 #minor ([#224](https://github.com/GlueOps/provisioner/issues/224)) ([1793430](https://github.com/GlueOps/provisioner/commit/179343096ec9ea66e988d52e46a92af624e6a772))
+
 ## [3.0.0](https://github.com/GlueOps/provisioner/compare/v2.4.1...v3.0.0) (2026-08-01)
 
 
