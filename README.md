@@ -51,9 +51,12 @@ BAREMETAL_SERVER_CONFIGS=         # JSON array of region configs (see below)
 ### Required if any Proxmox region is configured
 
 ```bash
-WAGGLE_API_URL=                   # base URL of the Waggle server (org-level; shared by all Proxmox regions)
-WAGGLE_API_KEY=                   # Waggle org API key (wgl_...)
 PROXMOX_DOWNLOAD_SERVER_URL=      # base URL for VM disk images (Proxmox regions)
+```
+
+Waggle credentials are **per region entry** (`waggle_api_url` / `waggle_api_key` in `BAREMETAL_SERVER_CONFIGS`), not env vars — different regions can belong to different Waggle orgs or servers.
+
+```bash
 ```
 
 ### Optional
@@ -90,6 +93,8 @@ A JSON array of region config objects. Each entry is either a libvirt (`SSHConfi
   "backend_type": "proxmox",
   "region_name": "proxmox-cluster-1",
   "enabled": true,
+  "waggle_api_url": "https://waggle.example.com",
+  "waggle_api_key": "wgl_...",
   "waggle_datacenter_name": "proxmox-cluster-1",
   "proxmox_host": "1.2.3.4",
   "proxmox_port": 8006,
@@ -167,7 +172,7 @@ Do these **in order** — the region only works once all of them exist:
 3. **Set operator capacity policy per hypervisor**: `reserved` headroom and the `schedulable` flag. Both are preserved across re-discovery; set `schedulable: false` to drain a node for maintenance.
 4. **Ensure slots exist** (org-level, shared by all datacenters). Slot names are exactly the instance types users see in the Slack dropdown; `vcpu`/`ram_gb`/`disk_gb` are what gets provisioned.
 5. **Create a PVE API token for the provisioner** — separate from Waggle's discovery token — with permission to create/delete/configure VMs and upload to the storage pool.
-6. **Add the region entry** to `BAREMETAL_SERVER_CONFIGS` (see format above), set `WAGGLE_API_URL`, `WAGGLE_API_KEY`, and `PROXMOX_DOWNLOAD_SERVER_URL`, and deploy.
+6. **Add the region entry** to `BAREMETAL_SERVER_CONFIGS` (see format above) with the org's `waggle_api_url`/`waggle_api_key` and the datacenter's Proxmox credentials, make sure `PROXMOX_DOWNLOAD_SERVER_URL` is set, and deploy.
 7. **Verify**: `GET /v1/regions` must list the region with the expected slots. A region that silently disappears from the response means its Waggle lookup failed — check the provisioner logs for `Skipping region <name>`.
 
 > ⚠️ **Load-bearing invariant: Waggle hypervisor names must equal Proxmox node names.** The provisioner uses a placement's `hypervisor_name` verbatim as the node in Proxmox API paths. Discovery guarantees this automatically — never hand-create hypervisor entries in Waggle with different names, or every create in that datacenter will fail.

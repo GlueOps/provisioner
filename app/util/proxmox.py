@@ -43,7 +43,7 @@ _CDE_PREFIX = "cde-codespaces-"
 # delete and simply re-download on demand if requested again.
 _IMAGE_CACHE_KEEP = int(os.getenv("PROXMOX_IMAGE_CACHE_KEEP", "5"))
 
-_waggle_client = None
+_waggle_clients = {}  # (waggle_api_url, waggle_api_key) -> WaggleClient, shared across same-org regions
 _proxmox_clients = {}  # region_name -> ProxmoxClient
 # region_name -> Counter of cached-image names used by in-flight creates;
 # the prune keep-set includes these so a concurrent create's import source
@@ -113,11 +113,13 @@ def _pool_name(vm_name: str) -> str:
     return f"{_CDE_PREFIX}{vm_name}"
 
 
-def _waggle() -> WaggleClient:
-    global _waggle_client
-    if _waggle_client is None:
-        _waggle_client = WaggleClient(os.environ["WAGGLE_API_URL"], os.environ["WAGGLE_API_KEY"])
-    return _waggle_client
+def _waggle(cfg) -> WaggleClient:
+    key = (cfg.waggle_api_url, cfg.waggle_api_key)
+    client = _waggle_clients.get(key)
+    if client is None:
+        client = WaggleClient(cfg.waggle_api_url, cfg.waggle_api_key)
+        _waggle_clients[key] = client
+    return client
 
 
 def _proxmox(cfg) -> ProxmoxClient:
@@ -194,7 +196,7 @@ async def create(cfg, vm_name: str, tags: dict, user_data: str, image: str, inst
 
 
 async def _create_locked(cfg, vm_name: str, tags: dict, user_data: str, image: str, instance_type: str):
-    waggle = _waggle()
+    waggle = _waggle(cfg)
     px = _proxmox(cfg)
     try:
         datacenter = await waggle.get_datacenter_by_name(cfg.waggle_datacenter_name)
@@ -381,7 +383,7 @@ async def delete(cfg, vm_name: str):
 
 async def _delete_locked(cfg, vm_name: str):
     px = _proxmox(cfg)
-    waggle = _waggle()
+    waggle = _waggle(cfg)
     # Resolve the datacenter (and subscript its id) up front: pool cleanup
     # below is scoped to it (a same-named pool in ANOTHER datacenter must
     # never be released from here), and a Waggle outage or malformed response
@@ -468,7 +470,7 @@ async def get_region(cfg) -> dict:
     only the Waggle slots that can currently be placed (fit within the bookable
     capacity of at least one schedulable hypervisor) — a slot that is listed is
     a slot a VM can be created with right now."""
-    waggle = _waggle()
+    waggle = _waggle(cfg)
     datacenter = await waggle.get_datacenter_by_name(cfg.waggle_datacenter_name)
     slots = await waggle.list_available_slots(datacenter["id"])
     return {

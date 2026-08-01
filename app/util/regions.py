@@ -53,6 +53,11 @@ class ProxmoxConfig(RegionBase):
     stores its own Proxmox token write-only and never returns it).
     """
     backend_type: str = "proxmox"
+    # Waggle org this datacenter belongs to. Each region entry carries its own
+    # credentials, so different regions can live in different Waggle orgs or
+    # servers; entries sharing the same url+key share one client.
+    waggle_api_url: str
+    waggle_api_key: str = Field(exclude=True)
     # Waggle datacenter this region maps to; defaults to region_name.
     waggle_datacenter_name: Optional[str] = None
     proxmox_host: str
