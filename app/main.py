@@ -4,7 +4,7 @@ from fastapi.security import APIKeyHeader
 from typing import Optional, Dict, List
 from pydantic import BaseModel, Field
 from util import ssh, virt, virsh, formatter, b64, regions, github, guacamole, tailscale, proxmox
-import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio, random
+import os, glueops.setup_logging, traceback, base64, yaml, tempfile, json, asyncio
 from schemas.schemas import ExistingVm, Vm, VmMeta, Message, VmTags
 
 
@@ -31,10 +31,11 @@ except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
 
-PROXMOX_DOWNLOAD_SERVER_URL = os.environ.get('PROXMOX_DOWNLOAD_SERVER_URL')
-if HAS_PROXMOX and not PROXMOX_DOWNLOAD_SERVER_URL:
-    logger.critical("PROXMOX_DOWNLOAD_SERVER_URL is required when Proxmox regions are configured")
-    raise SystemExit(1)
+if HAS_PROXMOX:
+    _missing = [k for k in ('WAGGLE_API_URL', 'WAGGLE_API_KEY', 'PROXMOX_DOWNLOAD_SERVER_URL') if not os.environ.get(k)]
+    if _missing:
+        logger.critical(f"Required when Proxmox regions are configured but not set: {', '.join(_missing)}")
+        raise SystemExit(1)
 
 api_key_header = APIKeyHeader(name="Authorization")
 
@@ -88,7 +89,12 @@ def _remove_guacamole_and_tailscale(vm_name: str):
 
 @app.post("/v1/create", response_model=Message)
 async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
-    logger.info(vm)
+    # Deliberately NOT logging the full payload: user_data carries profile
+    # secrets (e.g. GITHUB_TOKEN) and tags carry cde_token.
+    logger.info(
+        f"Create request: vm_name={vm.vm_name} region={vm.region_name} "
+        f"instance_type={vm.instance_type} image={vm.image} tag_keys={sorted(vm.tags)}"
+    )
     decoded_user_data = formatter.fix_indentation(base64.b64decode(vm.user_data).decode('utf-8').strip())
     try:
         yaml.safe_load(decoded_user_data)
@@ -96,53 +102,13 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
         raise ValueError(f"Invalid YAML in user data: {e}")
 
     # Resolve backend
-    proxmox_cfg, node = None, None
-    try:
-        proxmox_cfg, node = proxmox.parse_proxmox_region_name(vm.region_name, REGIONS)
-    except ValueError:
-        pass
+    proxmox_cfg = proxmox.get_proxmox_config(vm.region_name, REGIONS)
 
     if proxmox_cfg is not None:
-        instance_type = vm.instance_type.removesuffix(proxmox._OVER_ALLOCATED)
-        vm_specs = next(
-            (it for it in proxmox_cfg.available_instance_types if it.instance_type == instance_type),
-            None
-        )
-        if vm_specs is None:
-            raise ValueError(f"Instance type {vm.instance_type} not found in region {vm.region_name}")
-
-        vmid = None
-        iso_filename = None
-        vm_created = False
         try:
-            await proxmox.ensure_image_cached(proxmox_cfg, node, vm.image, PROXMOX_DOWNLOAD_SERVER_URL)
-            meta_data = f"instance-id: {vm.vm_name}\nlocal-hostname: {vm.vm_name}\n"
-            iso_bytes = proxmox.build_iso(decoded_user_data.encode(), meta_data.encode())
-            iso_filename = await proxmox.upload_iso(proxmox_cfg, node, vm.vm_name, iso_bytes)
-            for attempt in range(5):
-                vmid = await proxmox.get_next_vmid(proxmox_cfg)
-                try:
-                    await proxmox.create_vm(proxmox_cfg, node, vmid, vm.vm_name, vm_specs.vcpus, vm_specs.memory_mb, vm.image, iso_filename, vm.tags)
-                    break
-                except Exception as e:
-                    if attempt < 4 and ("already exists" in str(e) or "can't lock file" in str(e)):
-                        logger.warning(f"VMID {vmid} conflict on attempt {attempt + 1}, retrying")
-                        continue
-                    raise
-            vm_created = True
-            for attempt in range(5):
-                try:
-                    await proxmox.resize_disk(proxmox_cfg, node, vmid, vm_specs.storage_mb)
-                    break
-                except Exception as e:
-                    if attempt < 4 and "got timeout" in str(e):
-                        delay = (2 ** attempt) * 5 + random.uniform(0, 5)
-                        logger.warning(f"resize_disk timeout for VM {vmid} on attempt {attempt + 1}, retrying in {delay:.1f}s")
-                        await asyncio.sleep(delay)
-                        continue
-                    raise
-            await proxmox.start_vm(proxmox_cfg, node, vmid)
-            await proxmox.wait_for_cloud_init(proxmox_cfg, node, vmid)
+            # Waggle resolves vm.instance_type to a slot and picks the hypervisor;
+            # proxmox.create compensates internally (VM + Waggle pool) on failure.
+            await proxmox.create(proxmox_cfg, vm.vm_name, vm.tags, decoded_user_data, vm.image, vm.instance_type)
 
             guacamole_token, data_source = guacamole.get_data(GUACAMOLE_SERVER_URL, GUACAMOLE_SERVER_USERNAME, GUACAMOLE_SERVER_PASSWORD)
             connection_groups = guacamole.get_connection_groups(GUACAMOLE_SERVER_URL, guacamole_token, data_source)
@@ -151,18 +117,20 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             vm_id = guacamole.create_vm(GUACAMOLE_SERVER_URL, guacamole_token, data_source, connection_group_id, vm.vm_name, BASTION_SERVER_IP, BASTION_SERVER_PORT, BASTION_SERVER_USER, BASTION_SERVER_KEY)
             if owner:
                 guacamole.grant_connection_permission(GUACAMOLE_SERVER_URL, guacamole_token, data_source, owner, vm_id)
+        except proxmox.UnknownTargetError as e:
+            # Unknown datacenter/slot — nothing was provisioned, no compensation
+            raise HTTPException(status_code=422, detail=str(e))
+        except proxmox.PlacementError as e:
+            # Region can't place the VM (at capacity) — nothing was provisioned
+            raise HTTPException(status_code=409, detail=str(e))
         except Exception:
-            if vm_created:
-                try:
-                    await proxmox.delete_vm(proxmox_cfg, node, vmid)
-                except Exception as cleanup_err:
-                    logger.error(f"Compensating delete failed for VM {vmid}: {cleanup_err}")
+            # Idempotent: removes the VM (if any) and its Waggle pool
+            try:
+                await proxmox.delete(proxmox_cfg, vm.vm_name)
+            except Exception as cleanup_err:
+                logger.error(f"Compensating cleanup failed for VM {vm.vm_name}: {cleanup_err}")
             raise
-        finally:
-            if iso_filename and vmid:
-                await proxmox.eject_and_delete_iso(proxmox_cfg, node, vmid, iso_filename)
 
-        logger.info(vm.tags)
         return JSONResponse(status_code=200, content={"message": "Success"})
 
     # Libvirt path
@@ -229,7 +197,7 @@ async def create_vm(vm: Vm, api_key: str = Depends(get_api_key)):
             os.remove(meta_temp_file_path)
             logger.info(f"Meta Data temporary file deleted: {meta_temp_file_path}")
 
-    logger.info(vm.tags)
+    logger.info(f"Created libvirt VM {vm.vm_name} with tag keys {sorted(vm.tags)}")
     return JSONResponse(status_code=200, content={"message": "Success"})
 
 
@@ -238,8 +206,13 @@ async def list_regions(api_key: str = Depends(get_api_key)):
     result = []
     for cfg in regions.get_enabled_regions_only(REGIONS):
         if getattr(cfg, "backend_type", "libvirt") == "proxmox":
-            nodes = await proxmox.get_nodes_with_capacity(cfg)
-            result.extend(nodes)
+            # One unreachable Waggle/misconfigured region must not take down
+            # the whole endpoint (and with it the create modal) for the
+            # healthy regions — degrade by skipping it.
+            try:
+                result.append(await proxmox.get_region(cfg))
+            except Exception as e:
+                logger.error(f"Skipping region {cfg.region_name} in /v1/regions: {e}")
         else:
             result.append(cfg)
     return result
@@ -274,14 +247,12 @@ async def list_vms(api_key: str = Depends(get_api_key)):
 
 @app.post("/v1/start", response_model=Message)
 async def start_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
-    try:
-        proxmox_cfg, node = proxmox.parse_proxmox_region_name(vm.region_name, REGIONS)
-    except ValueError:
-        proxmox_cfg, node = None, None
-
+    proxmox_cfg = proxmox.get_proxmox_config(vm.region_name, REGIONS)
     if proxmox_cfg is not None:
-        vmid = await proxmox.find_vmid_by_name(proxmox_cfg, node, vm.vm_name)
-        await proxmox.start_vm(proxmox_cfg, node, vmid)
+        try:
+            await proxmox.start(proxmox_cfg, vm.vm_name)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
     else:
         cfg = regions.get_server_config(vm.region_name, REGIONS)
         virsh.start_vm(cfg.connect_uri, vm.vm_name)
@@ -290,14 +261,12 @@ async def start_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
 
 @app.post("/v1/stop", response_model=Message)
 async def stop_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
-    try:
-        proxmox_cfg, node = proxmox.parse_proxmox_region_name(vm.region_name, REGIONS)
-    except ValueError:
-        proxmox_cfg, node = None, None
-
+    proxmox_cfg = proxmox.get_proxmox_config(vm.region_name, REGIONS)
     if proxmox_cfg is not None:
-        vmid = await proxmox.find_vmid_by_name(proxmox_cfg, node, vm.vm_name)
-        await proxmox.stop_vm(proxmox_cfg, node, vmid)
+        try:
+            await proxmox.stop(proxmox_cfg, vm.vm_name)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
     else:
         cfg = regions.get_server_config(vm.region_name, REGIONS)
         virsh.destroy_vm(cfg.connect_uri, vm.vm_name)
@@ -306,14 +275,12 @@ async def stop_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
 
 @app.post("/v1/edit-tags", response_model=Message)
 async def edit_vm_tags(vm: VmTags, api_key: str = Depends(get_api_key)):
-    try:
-        proxmox_cfg, node = proxmox.parse_proxmox_region_name(vm.region_name, REGIONS)
-    except ValueError:
-        proxmox_cfg, node = None, None
-
+    proxmox_cfg = proxmox.get_proxmox_config(vm.region_name, REGIONS)
     if proxmox_cfg is not None:
-        vmid = await proxmox.find_vmid_by_name(proxmox_cfg, node, vm.vm_name)
-        await proxmox.edit_vm_tags(proxmox_cfg, node, vmid, vm.tags)
+        try:
+            await proxmox.edit_tags(proxmox_cfg, vm.vm_name, vm.tags)
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
     else:
         cfg = regions.get_server_config(vm.region_name, REGIONS)
         virsh.edit_vm_tags(cfg.connect_uri, vm.vm_name, vm.tags)
@@ -322,16 +289,11 @@ async def edit_vm_tags(vm: VmTags, api_key: str = Depends(get_api_key)):
 
 @app.delete("/v1/delete", response_model=Message)
 async def delete_vm(vm: VmMeta, api_key: str = Depends(get_api_key)):
-    try:
-        proxmox_cfg, node = proxmox.parse_proxmox_region_name(vm.region_name, REGIONS)
-    except ValueError:
-        proxmox_cfg, node = None, None
-
+    proxmox_cfg = proxmox.get_proxmox_config(vm.region_name, REGIONS)
     if proxmox_cfg is not None:
-        vmid = await proxmox.find_vmid_by_name(proxmox_cfg, node, vm.vm_name)
         try:
             _remove_guacamole_and_tailscale(vm.vm_name)
-            await proxmox.delete_vm(proxmox_cfg, node, vmid)
+            await proxmox.delete(proxmox_cfg, vm.vm_name)
         except Exception as e:
             logger.error(f"Failed to delete VM {vm.vm_name}: {e}")
             raise
