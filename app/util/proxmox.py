@@ -476,6 +476,7 @@ async def get_region(cfg) -> dict:
     return {
         "region_name": cfg.region_name,
         "enabled": cfg.enabled,
+        "tunnel_endpoint": cfg.tunnel_endpoint,
         "available_instance_types": [
             {
                 "instance_type": s["name"],

@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
-from pydantic import BaseModel, Field, model_validator
-import os, glueops.setup_logging, json
+from pydantic import BaseModel, Field, field_validator, model_validator
+import os, re, glueops.setup_logging, json
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logger = glueops.setup_logging.configure(level=LOG_LEVEL)
@@ -16,6 +16,30 @@ class InstanceType(BaseModel):
 class RegionBase(BaseModel):
     region_name: str
     enabled: bool
+    # sish host codespace VMs in this region tunnel to (e.g.
+    # "nyc1.tunnels.cde.glueopshosted.com"). None -> the legacy central
+    # tunnel; consumers (the slackbot) own that default.
+    tunnel_endpoint: Optional[str] = None
+
+    @field_validator("tunnel_endpoint")
+    @classmethod
+    def validate_tunnel_endpoint(cls, v: Optional[str]) -> Optional[str]:
+        # Bare hostname only — no scheme, port, path, or userinfo. A malformed
+        # value must fail startup rather than propagate: downstream it becomes
+        # a permanent VM tag and access URL while cloud-init independently
+        # drops non-hostname values, leaving the VM tunneled to the legacy
+        # endpoint behind a dead regional URL.
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            return None
+        # ASCII keeps IGNORECASE from Unicode case-folding (e.g. the Kelvin
+        # sign matching "k"), which would accept values the JS-side pattern
+        # (ASCII-only /i) rejects.
+        if not re.fullmatch(r"[a-z0-9][a-z0-9.-]*", v, re.IGNORECASE | re.ASCII):
+            raise ValueError(f"invalid tunnel_endpoint {v!r}: must be a bare hostname")
+        return v
     # Libvirt regions declare instance types in config; Proxmox regions get
     # theirs from Waggle slots at request time, so the field defaults empty.
     available_instance_types: List[InstanceType] = []
