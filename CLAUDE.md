@@ -66,9 +66,7 @@ There are no automated tests or linting tools configured in this project.
 | `API_TOKEN` | Bearer token for all API endpoints |
 | `PROVISIONER_ENVIRONMENT` | `prod` or `nonprod` (filters GitHub image releases) |
 | `DOWNLOAD_SERVER_URL` | Base URL for VM disk images (libvirt regions) |
-| `WAGGLE_API_URL` | Base URL of the Waggle server (org-level, shared by all Proxmox regions); required only if any Proxmox region is configured |
-| `WAGGLE_API_KEY` | Waggle org API key (`wgl_...`); required only if any Proxmox region is configured |
-| `PROXMOX_DOWNLOAD_SERVER_URL` | Base URL for VM disk images (Proxmox regions); required only if any Proxmox region is configured |
+| `PROXMOX_DOWNLOAD_SERVER_URL` | Base URL for VM disk images (Proxmox regions); required only if any Proxmox region is configured. Waggle credentials are NOT env vars — they live per region entry (`waggle_api_url`/`waggle_api_key`), so regions can span multiple Waggle orgs/servers |
 | `BAREMETAL_SERVER_CONFIGS` | JSON array of region configs — libvirt (`SSHConfig`) or Proxmox (`ProxmoxConfig`) entries; detected by `backend_type` field (defaults to `"libvirt"`) |
 | `GUACAMOLE_SERVER_URL` / `_USERNAME` / `_PASSWORD` | Guacamole credentials |
 | `BASTION_SERVER_IP` / `_PORT` / `_USER` / `_KEY` | Bastion host for Guacamole connections |
@@ -85,6 +83,8 @@ One entry per Waggle datacenter. The datacenter, its hypervisors, and the slots 
   "backend_type": "proxmox",
   "region_name": "proxmox-cluster-1",
   "enabled": true,
+  "waggle_api_url": "https://waggle.example.com",
+  "waggle_api_key": "wgl_...",
   "waggle_datacenter_name": "proxmox-cluster-1",
   "proxmox_host": "1.2.3.4",
   "proxmox_port": 8006,

@@ -51,9 +51,8 @@ Do not use `python3` directly, `.venv`, or `devbox shell --`. The `devbox run --
 import asyncio, os, sys
 sys.path.insert(0, "/workspaces/glueops/provisioner")
 
-# The module reads Waggle + image-server settings from env
-os.environ["WAGGLE_API_URL"] = "<WAGGLE_URL>"
-os.environ["WAGGLE_API_KEY"] = "wgl_..."
+# The module reads the image-server setting from env; Waggle credentials
+# are per region config (multiple Waggle orgs/servers supported).
 os.environ["PROXMOX_DOWNLOAD_SERVER_URL"] = "<DOWNLOAD_BASE_URL>"
 
 from app.util import proxmox, regions
@@ -61,6 +60,8 @@ from app.util import proxmox, regions
 cfg = regions.ProxmoxConfig(
     region_name="<REGION_NAME>",                      # == Waggle datacenter name (or set waggle_datacenter_name)
     enabled=True,
+    waggle_api_url="<WAGGLE_URL>",
+    waggle_api_key="wgl_...",
     proxmox_host="<PROXMOX_HOST_OR_IP>",
     proxmox_port=8006,
     proxmox_token_id="<USER>@<REALM>!<TOKENNAME>",   # e.g. root@pam!mytoken
@@ -129,7 +130,7 @@ High-level orchestration; all Proxmox/Waggle HTTP calls live in the glueops-help
 
 Helpers clients available in test scripts:
 - `proxmox._proxmox(cfg)` — cached `glueops.proxmox.ProxmoxClient` for the region
-- `proxmox._waggle()` — cached `glueops.waggle.WaggleClient` (env-configured)
+- `proxmox._waggle(cfg)` — cached `glueops.waggle.WaggleClient` for the region's org (entries sharing `waggle_api_url`+`waggle_api_key` share a client)
 
 ---
 

@@ -31,11 +31,11 @@ except KeyError as e:
     logger.critical(f"Required environment variable {e} is not set")
     raise SystemExit(1)
 
-if HAS_PROXMOX:
-    _missing = [k for k in ('WAGGLE_API_URL', 'WAGGLE_API_KEY', 'PROXMOX_DOWNLOAD_SERVER_URL') if not os.environ.get(k)]
-    if _missing:
-        logger.critical(f"Required when Proxmox regions are configured but not set: {', '.join(_missing)}")
-        raise SystemExit(1)
+# Waggle credentials live per-region in BAREMETAL_SERVER_CONFIGS (validated by
+# the ProxmoxConfig model), so the only proxmox-wide env var is the image server.
+if HAS_PROXMOX and not os.environ.get('PROXMOX_DOWNLOAD_SERVER_URL'):
+    logger.critical("PROXMOX_DOWNLOAD_SERVER_URL is required when Proxmox regions are configured")
+    raise SystemExit(1)
 
 api_key_header = APIKeyHeader(name="Authorization")
 
