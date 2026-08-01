@@ -16,7 +16,9 @@ class InstanceType(BaseModel):
 class RegionBase(BaseModel):
     region_name: str
     enabled: bool
-    available_instance_types: List[InstanceType]
+    # Libvirt regions declare instance types in config; Proxmox regions get
+    # theirs from Waggle slots at request time, so the field defaults empty.
+    available_instance_types: List[InstanceType] = []
     total_vcpus: Optional[int] = None
     total_memory_gb: Optional[int] = None
     total_storage_gb: Optional[int] = None
@@ -29,6 +31,9 @@ class RegionBase(BaseModel):
 
 class SSHConfig(RegionBase):
     backend_type: str = "libvirt"
+    # Required for libvirt (re-declared without the RegionBase default): a
+    # typo'd key in config should fail startup, not silently offer no sizes.
+    available_instance_types: List[InstanceType]
     user: str
     host: str
     port: int
@@ -41,15 +46,29 @@ class SSHConfig(RegionBase):
 
 
 class ProxmoxConfig(RegionBase):
+    """One Waggle datacenter backed by one Proxmox cluster.
+
+    Waggle decides which hypervisor each VM lands on; the Proxmox credentials
+    here are what the provisioner uses to actually create the VMs (Waggle
+    stores its own Proxmox token write-only and never returns it).
+    """
     backend_type: str = "proxmox"
+    # Waggle datacenter this region maps to; defaults to region_name.
+    waggle_datacenter_name: Optional[str] = None
     proxmox_host: str
     proxmox_port: int = 8006
     proxmox_token_id: str = Field(exclude=True)
     proxmox_token_secret: str = Field(exclude=True)
     proxmox_storage: str
     proxmox_bridge: str
-    proxmox_vlan_tag: int
+    proxmox_vlan_tag: Optional[int] = None
     proxmox_verify_ssl: bool = True
+
+    @model_validator(mode='after')
+    def default_datacenter_name(self) -> 'ProxmoxConfig':
+        if not self.waggle_datacenter_name:
+            self.waggle_datacenter_name = self.region_name
+        return self
 
 
 def load_configs_from_env(server_configs) -> List[Union[SSHConfig, ProxmoxConfig]]:
