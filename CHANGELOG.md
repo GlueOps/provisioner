@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.0.0](https://github.com/GlueOps/provisioner/compare/v2.4.1...v3.0.0) (2026-08-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* proxmox region config now carries waggle_datacenter_name plus proxmox credentials only (no available_instance_types); requires WAGGLE_API_URL and WAGGLE_API_KEY; region names are datacenter-level (no {cluster}-{node} names). Proxmox was not in production; libvirt config and behavior are unchanged.
+
+### Features
+
+* waggle-backed proxmox placement ([#225](https://github.com/GlueOps/provisioner/issues/225)) ([0091d9c](https://github.com/GlueOps/provisioner/commit/0091d9c3b7649b6497c9ceeedb6dd394a3ee7188))
+
+
+### Miscellaneous Chores
+
+* add Apache-2.0 LICENSE ([#222](https://github.com/GlueOps/provisioner/issues/222)) ([817d24a](https://github.com/GlueOps/provisioner/commit/817d24aab0795f20256b9ccd54bca938ad9e74e7))
+
 ## [2.4.1](https://github.com/GlueOps/provisioner/compare/v2.4.0...v2.4.1) (2026-06-30)
 
 
