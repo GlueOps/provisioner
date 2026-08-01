@@ -31,13 +31,17 @@ class RegionBase(BaseModel):
         # endpoint behind a dead regional URL.
         if v is None:
             return v
-        v = v.strip()
+        # DNS is case-insensitive and a trailing dot is equivalent, so
+        # normalize rather than just validate: downstream, the legacy-vs-
+        # regional naming split is an EXACT string comparison against
+        # "tunnels.glueopshosted.com" (slackbot cdeAccessUrl and the VM's
+        # developer-setup.sh), and a case/dot variant of the legacy endpoint
+        # would be misclassified as regional — dead URLs for the VM's life.
+        v = v.strip().lower().removesuffix(".")
         if not v:
             return None
-        # ASCII keeps IGNORECASE from Unicode case-folding (e.g. the Kelvin
-        # sign matching "k"), which would accept values the JS-side pattern
-        # (ASCII-only /i) rejects.
-        if not re.fullmatch(r"[a-z0-9][a-z0-9.-]*", v, re.IGNORECASE | re.ASCII):
+        label = r"[a-z0-9]([a-z0-9-]*[a-z0-9])?"
+        if not re.fullmatch(rf"{label}(\.{label})*", v):
             raise ValueError(f"invalid tunnel_endpoint {v!r}: must be a bare hostname")
         return v
     # Libvirt regions declare instance types in config; Proxmox regions get
