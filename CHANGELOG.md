@@ -15,6 +15,7 @@
 ### Miscellaneous Chores
 
 * **patch:** update dataaxiom/ghcr-cleanup-action to v1.2.2 #patch ([#217](https://github.com/GlueOps/provisioner/issues/217)) ([93352e2](https://github.com/GlueOps/provisioner/commit/93352e2f487f854fec6e3035aaf199dcc46ddac0))
+* **patch:** update jetpackio/devbox to 0.17.5 #patch ([#218](https://github.com/GlueOps/provisioner/issues/218)) ([6cdcd67](https://github.com/GlueOps/provisioner/commit/6cdcd675c2b066abe4ca99883e9b6d5803695248))
 
 ## [4.0.0](https://github.com/GlueOps/provisioner/compare/v3.0.0...v4.0.0) (2026-08-01)
 
