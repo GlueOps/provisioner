@@ -1,5 +1,21 @@
 # Changelog
 
+## [4.1.0](https://github.com/GlueOps/provisioner/compare/v4.0.0...v4.1.0) (2026-08-02)
+
+
+### Features
+
+* add tunnel_endpoint to region configs and /v1/regions ([#229](https://github.com/GlueOps/provisioner/issues/229)) ([d80b92d](https://github.com/GlueOps/provisioner/commit/d80b92d7df816b959c5df6575eea2ae3efc333a7))
+* update docker/login-action to v4.3.0 #minor ([#228](https://github.com/GlueOps/provisioner/issues/228)) ([95f4afb](https://github.com/GlueOps/provisioner/commit/95f4afb892b3d18326c0e93fce12efec59bd6253))
+* update docker/metadata-action to v6.2.0 #minor ([#230](https://github.com/GlueOps/provisioner/issues/230)) ([6b13047](https://github.com/GlueOps/provisioner/commit/6b13047dc89f559cce8249d7cb913972f263a392))
+* update docker/setup-buildx-action to v4.2.0 #minor ([#231](https://github.com/GlueOps/provisioner/issues/231)) ([3abfd54](https://github.com/GlueOps/provisioner/commit/3abfd54e37773c94f1aabaf3a96e8db4faa7beac))
+* update docker/setup-buildx-action to v4.2.0 #minor ([#232](https://github.com/GlueOps/provisioner/issues/232)) ([a341eea](https://github.com/GlueOps/provisioner/commit/a341eeacebe4df3ba77e939fe38a0d5a7cd6923a))
+
+
+### Miscellaneous Chores
+
+* **patch:** update dataaxiom/ghcr-cleanup-action to v1.2.2 #patch ([#217](https://github.com/GlueOps/provisioner/issues/217)) ([93352e2](https://github.com/GlueOps/provisioner/commit/93352e2f487f854fec6e3035aaf199dcc46ddac0))
+
 ## [4.0.0](https://github.com/GlueOps/provisioner/compare/v3.0.0...v4.0.0) (2026-08-01)
 
 
