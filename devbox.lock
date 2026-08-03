@@ -1,10 +1,6 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2026-06-28T17:12:19Z",
-      "resolved": "github:NixOS/nixpkgs/534ee3d8beb1737b5342995f8837e2b2705ce0d8?lastModified=1782666739&narHash=sha256-2CYuaRDT7hcYnGW%2B3TTTy%2BfNnY4jQ6%2FmGk6ew035XP4%3D"
-    },
     "libvirt@12.1.0": {
       "last_modified": "2026-04-01T09:13:21Z",
       "resolved": "github:NixOS/nixpkgs/8d029aa64915e54b7846873d9583af4c9fd21ea4#libvirt",
