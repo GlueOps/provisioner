@@ -76,6 +76,7 @@ A JSON array of region config objects. Each entry is either a libvirt (`SSHConfi
 {
   "backend_type": "libvirt",
   "region_name": "us-east-1",
+  "tunnel_endpoint": "us-east-1.tunnels.cde.glueopshosted.com",
   "enabled": true,
   "host": "10.0.0.1",
   "port": 2222,
@@ -92,6 +93,7 @@ A JSON array of region config objects. Each entry is either a libvirt (`SSHConfi
 {
   "backend_type": "proxmox",
   "region_name": "proxmox-cluster-1",
+  "tunnel_endpoint": "proxmox-cluster-1.tunnels.cde.glueopshosted.com",
   "enabled": true,
   "waggle_api_url": "https://waggle.example.com",
   "waggle_api_key": "wgl_...",
@@ -172,8 +174,15 @@ Do these **in order** — the region only works once all of them exist:
 3. **Set operator capacity policy per hypervisor**: `reserved` headroom and the `schedulable` flag. Both are preserved across re-discovery; set `schedulable: false` to drain a node for maintenance.
 4. **Ensure slots exist** (org-level, shared by all datacenters). Slot names are exactly the instance types users see in the Slack dropdown; `vcpu`/`ram_gb`/`disk_gb` are what gets provisioned.
 5. **Create a PVE API token for the provisioner** — separate from Waggle's discovery token — with permission to create/delete/configure VMs and upload to the storage pool.
-6. **Add the region entry** to `BAREMETAL_SERVER_CONFIGS` (see format above) with the org's `waggle_api_url`/`waggle_api_key` and the datacenter's Proxmox credentials, make sure `PROXMOX_DOWNLOAD_SERVER_URL` is set, and deploy.
-7. **Verify**: `GET /v1/regions` must list the region with the expected slots. A region that silently disappears from the response means its Waggle lookup failed — check the provisioner logs for `Skipping region <name>`.
+6. **Stand up the region's tunnel endpoint** — all four artifacts, in order, or cert issuance stalls:
+   1. add `<region>` and `*.<region>` to `module.acme_dns01_user_cde.cert_domains` in **aws-dns-production** so the box's ACME user may write that region's `_acme-challenge` records;
+   2. in **aws-cloud-development-environment-assets-production**, add the region with `create_distribution = false`, apply, and copy the emitted `acm_validation_record_entry` into aws-dns-production along with the region's A records (`<region>.tunnels.cde`, `origin.<region>.tunnels.cde`);
+   3. flip `create_distribution = true`, apply, and copy the emitted `wildcard_cname_entry` (`*.<region>.tunnels.cde`) into aws-dns-production;
+   4. deploy the sish stack (**GlueOps/cde-sish-tunnels**) on the box with `DOMAIN=<region>.tunnels.cde.glueopshosted.com` and the ACME credentials, then smoke-test a tunnel.
+
+   CDE VMs in this region cannot come up without it.
+7. **Add the region entry** to `BAREMETAL_SERVER_CONFIGS` (see format above) with the org's `waggle_api_url`/`waggle_api_key`, the datacenter's Proxmox credentials, and the **required** `tunnel_endpoint` from step 6 — a bare hostname; the provisioner refuses to start if any region omits it or if it is malformed. Make sure `PROXMOX_DOWNLOAD_SERVER_URL` is set, and deploy.
+8. **Verify**: `GET /v1/regions` must list the region with the expected slots. A region that silently disappears from the response means its Waggle lookup failed — check the provisioner logs for `Skipping region <name>`.
 
 > ⚠️ **Load-bearing invariant: Waggle hypervisor names must equal Proxmox node names.** The provisioner uses a placement's `hypervisor_name` verbatim as the node in Proxmox API paths. Discovery guarantees this automatically — never hand-create hypervisor entries in Waggle with different names, or every create in that datacenter will fail.
 

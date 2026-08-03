@@ -17,32 +17,32 @@ class RegionBase(BaseModel):
     region_name: str
     enabled: bool
     # sish host codespace VMs in this region tunnel to (e.g.
-    # "nyc1.tunnels.cde.glueopshosted.com"). None -> the legacy central
-    # tunnel; consumers (the slackbot) own that default.
-    tunnel_endpoint: Optional[str] = None
+    # "nyc1.tunnels.cde.glueopshosted.com"). Required: there is no central
+    # tunnel to fall back to, so a region without one cannot serve CDEs and
+    # should fail at config load rather than at VM-create time.
+    tunnel_endpoint: str
 
     @field_validator("tunnel_endpoint")
     @classmethod
-    def validate_tunnel_endpoint(cls, v: Optional[str]) -> Optional[str]:
+    def validate_tunnel_endpoint(cls, v: str) -> str:
         # Bare hostname only — no scheme, port, path, or userinfo. A malformed
         # value must fail startup rather than propagate: downstream it becomes
-        # a permanent VM tag and access URL while cloud-init independently
-        # drops non-hostname values, leaving the VM tunneled to the legacy
-        # endpoint behind a dead regional URL.
-        if v is None:
-            return v
+        # a permanent VM tag, the access URL, and the endpoint the VM's
+        # autossh dials, so a bad value means dead URLs for the VM's life.
         # DNS is case-insensitive and a trailing dot is equivalent, so
-        # normalize rather than just validate: downstream, the legacy-vs-
-        # regional naming split is an EXACT string comparison against
-        # "tunnels.glueopshosted.com" (slackbot cdeAccessUrl and the VM's
-        # developer-setup.sh), and a case/dot variant of the legacy endpoint
-        # would be misclassified as regional — dead URLs for the VM's life.
+        # normalize rather than merely validate — the value is compared and
+        # concatenated as an exact string by every consumer.
         v = v.strip().lower().removesuffix(".")
         if not v:
-            return None
+            raise ValueError("tunnel_endpoint must not be empty")
         label = r"[a-z0-9]([a-z0-9-]*[a-z0-9])?"
         if not re.fullmatch(rf"{label}(\.{label})*", v):
             raise ValueError(f"invalid tunnel_endpoint {v!r}: must be a bare hostname")
+        if v == "tunnels.glueopshosted.com":
+            raise ValueError(
+                "tunnel_endpoint is the retired central tunnel; use this region's "
+                "<region>.tunnels.cde.glueopshosted.com endpoint"
+            )
         return v
     # Libvirt regions declare instance types in config; Proxmox regions get
     # theirs from Waggle slots at request time, so the field defaults empty.

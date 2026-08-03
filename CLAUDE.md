@@ -82,6 +82,7 @@ One entry per Waggle datacenter. The datacenter, its hypervisors, and the slots 
 {
   "backend_type": "proxmox",
   "region_name": "proxmox-cluster-1",
+  "tunnel_endpoint": "proxmox-cluster-1.tunnels.cde.glueopshosted.com",
   "enabled": true,
   "waggle_api_url": "https://waggle.example.com",
   "waggle_api_key": "wgl_...",
@@ -98,6 +99,8 @@ One entry per Waggle datacenter. The datacenter, its hypervisors, and the slots 
 ```
 
 `waggle_datacenter_name` defaults to `region_name`; `proxmox_vlan_tag` is optional (omit or `null` for no VLAN tag).
+
+`tunnel_endpoint` is **required on every region** (both backends): the sish host codespace VMs in that region tunnel to, as a bare hostname (no scheme/port/path). It is normalized to lowercase without a trailing dot, and a missing or malformed value fails startup — there is no central tunnel to fall back to.
 
 ## CI/CD
 
