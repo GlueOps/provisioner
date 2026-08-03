@@ -174,8 +174,9 @@ Do these **in order** — the region only works once all of them exist:
 3. **Set operator capacity policy per hypervisor**: `reserved` headroom and the `schedulable` flag. Both are preserved across re-discovery; set `schedulable: false` to drain a node for maintenance.
 4. **Ensure slots exist** (org-level, shared by all datacenters). Slot names are exactly the instance types users see in the Slack dropdown; `vcpu`/`ram_gb`/`disk_gb` are what gets provisioned.
 5. **Create a PVE API token for the provisioner** — separate from Waggle's discovery token — with permission to create/delete/configure VMs and upload to the storage pool.
-6. **Add the region entry** to `BAREMETAL_SERVER_CONFIGS` (see format above) with the org's `waggle_api_url`/`waggle_api_key` and the datacenter's Proxmox credentials, make sure `PROXMOX_DOWNLOAD_SERVER_URL` is set, and deploy.
-7. **Verify**: `GET /v1/regions` must list the region with the expected slots. A region that silently disappears from the response means its Waggle lookup failed — check the provisioner logs for `Skipping region <name>`.
+6. **Stand up the region's tunnel endpoint**: a sish server serving `<region>.tunnels.cde.glueopshosted.com`, its DNS records (bare A, `origin.` A, wildcard CNAME) and its wildcard certificate. CDE VMs in this region cannot come up without it.
+7. **Add the region entry** to `BAREMETAL_SERVER_CONFIGS` (see format above) with the org's `waggle_api_url`/`waggle_api_key`, the datacenter's Proxmox credentials, and the **required** `tunnel_endpoint` from step 6 — a bare hostname; the provisioner refuses to start if any region omits it or if it is malformed. Make sure `PROXMOX_DOWNLOAD_SERVER_URL` is set, and deploy.
+8. **Verify**: `GET /v1/regions` must list the region with the expected slots. A region that silently disappears from the response means its Waggle lookup failed — check the provisioner logs for `Skipping region <name>`.
 
 > ⚠️ **Load-bearing invariant: Waggle hypervisor names must equal Proxmox node names.** The provisioner uses a placement's `hypervisor_name` verbatim as the node in Proxmox API paths. Discovery guarantees this automatically — never hand-create hypervisor entries in Waggle with different names, or every create in that datacenter will fail.
 

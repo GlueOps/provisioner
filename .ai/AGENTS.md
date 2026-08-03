@@ -59,6 +59,7 @@ from app.util import proxmox, regions
 
 cfg = regions.ProxmoxConfig(
     region_name="<REGION_NAME>",                      # == Waggle datacenter name (or set waggle_datacenter_name)
+    tunnel_endpoint="<REGION_NAME>.tunnels.cde.glueopshosted.com",  # required on every region
     enabled=True,
     waggle_api_url="<WAGGLE_URL>",
     waggle_api_key="wgl_...",

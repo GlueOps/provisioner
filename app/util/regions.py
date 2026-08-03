@@ -38,6 +38,11 @@ class RegionBase(BaseModel):
         label = r"[a-z0-9]([a-z0-9-]*[a-z0-9])?"
         if not re.fullmatch(rf"{label}(\.{label})*", v):
             raise ValueError(f"invalid tunnel_endpoint {v!r}: must be a bare hostname")
+        if v == "tunnels.glueopshosted.com":
+            raise ValueError(
+                "tunnel_endpoint is the retired central tunnel; use this region's "
+                "<region>.tunnels.cde.glueopshosted.com endpoint"
+            )
         return v
     # Libvirt regions declare instance types in config; Proxmox regions get
     # theirs from Waggle slots at request time, so the field defaults empty.
