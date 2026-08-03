@@ -76,6 +76,7 @@ A JSON array of region config objects. Each entry is either a libvirt (`SSHConfi
 {
   "backend_type": "libvirt",
   "region_name": "us-east-1",
+  "tunnel_endpoint": "us-east-1.tunnels.cde.glueopshosted.com",
   "enabled": true,
   "host": "10.0.0.1",
   "port": 2222,
@@ -92,6 +93,7 @@ A JSON array of region config objects. Each entry is either a libvirt (`SSHConfi
 {
   "backend_type": "proxmox",
   "region_name": "proxmox-cluster-1",
+  "tunnel_endpoint": "proxmox-cluster-1.tunnels.cde.glueopshosted.com",
   "enabled": true,
   "waggle_api_url": "https://waggle.example.com",
   "waggle_api_key": "wgl_...",
