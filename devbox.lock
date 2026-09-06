@@ -5,51 +5,51 @@
       "last_modified": "2026-06-28T17:12:19Z",
       "resolved": "github:NixOS/nixpkgs/534ee3d8beb1737b5342995f8837e2b2705ce0d8?lastModified=1782666739&narHash=sha256-2CYuaRDT7hcYnGW%2B3TTTy%2BfNnY4jQ6%2FmGk6ew035XP4%3D"
     },
-    "libvirt@12.1.0": {
-      "last_modified": "2026-04-01T09:13:21Z",
-      "resolved": "github:NixOS/nixpkgs/8d029aa64915e54b7846873d9583af4c9fd21ea4#libvirt",
+    "libvirt@12.4.0": {
+      "last_modified": "2026-08-06T00:10:29Z",
+      "resolved": "github:NixOS/nixpkgs/70ce234312134a463ba7728e94da2486a1d237ac#libvirt",
       "source": "devbox-search",
-      "version": "12.1.0",
+      "version": "12.4.0",
       "systems": {
         "aarch64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/3frfaj46nra10rpykalp76b4fxn83ifm-libvirt-12.1.0",
+              "path": "/nix/store/1bqpds57sx4hwj9gbc47a4391bz6bj8z-libvirt-12.4.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/3frfaj46nra10rpykalp76b4fxn83ifm-libvirt-12.1.0"
+          "store_path": "/nix/store/1bqpds57sx4hwj9gbc47a4391bz6bj8z-libvirt-12.4.0"
         },
         "aarch64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/aw0g02swp6hcabar76iyb5f4n4zss46i-libvirt-12.1.0",
+              "path": "/nix/store/c2ws5gbjwi2cv08anv9l9k2fixrz0ls9-libvirt-12.4.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/aw0g02swp6hcabar76iyb5f4n4zss46i-libvirt-12.1.0"
+          "store_path": "/nix/store/c2ws5gbjwi2cv08anv9l9k2fixrz0ls9-libvirt-12.4.0"
         },
         "x86_64-darwin": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/549z2y4898yl4wkj121bxf5fsryypv23-libvirt-12.1.0",
+              "path": "/nix/store/5ksd6j4qn6c1y8nmlcrnyxr94snvvmks-libvirt-12.4.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/549z2y4898yl4wkj121bxf5fsryypv23-libvirt-12.1.0"
+          "store_path": "/nix/store/5ksd6j4qn6c1y8nmlcrnyxr94snvvmks-libvirt-12.4.0"
         },
         "x86_64-linux": {
           "outputs": [
             {
               "name": "out",
-              "path": "/nix/store/9r1h6gzjg1zgq2gljg5jxwix1881njq5-libvirt-12.1.0",
+              "path": "/nix/store/gx3prsq3s0pv2isgc1wbvj050r92xizh-libvirt-12.4.0",
               "default": true
             }
           ],
-          "store_path": "/nix/store/9r1h6gzjg1zgq2gljg5jxwix1881njq5-libvirt-12.1.0"
+          "store_path": "/nix/store/gx3prsq3s0pv2isgc1wbvj050r92xizh-libvirt-12.4.0"
         }
       }
     },
@@ -119,7 +119,7 @@
     },
     "python-full@3.13.5": {
       "last_modified": "2025-07-28T17:09:23Z",
-      "plugin_version": "0.0.4",
+      "plugin_version": "0.0.5",
       "resolved": "github:NixOS/nixpkgs/648f70160c03151bc2121d179291337ad6bc564b#python313Full",
       "source": "devbox-search",
       "version": "3.13.5",
